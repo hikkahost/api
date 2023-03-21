@@ -31,7 +31,7 @@ async def create_api(request, port, name):
 
 
 @api.route('/action/<type>/<name>', methods=['GET'])
-#@protect
+@protect
 async def action_api(request, type, name):
     actions = {
         'start': start,
@@ -49,7 +49,7 @@ async def action_api(request, type, name):
 
 
 @api.route('/list', methods=['GET'])
-#@protect
+@protect
 async def list_api(request):
     try:
         return json({'list': containers_list()})
@@ -66,7 +66,7 @@ async def number_api(request):
         return json({'error': str(e)}, status=400)
     
 @api.route('/logs/<name>', methods=['GET'])
-#@protect
+@protect
 async def logs_api(request, name):
     try:
         return json({'logs': logs(name)})
