@@ -35,7 +35,6 @@ def json_serializable(obj):
         res.append({
             "name": i.name,
             "status": i.status,
-            "logs": i.logs().decode("utf-8"),
         })
 
     return res
@@ -53,3 +52,8 @@ def get_number_of_containers():
             num += 1
 
     return num
+
+def logs(name):
+    log = client.containers.get(name).logs(tail=0, follow=True).decode("utf-8")
+    print(log)
+    return log
