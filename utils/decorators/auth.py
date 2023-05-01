@@ -11,7 +11,7 @@ def protect(f):
         if not auth_header:
             return json({"error": "Authorization header is missing."}, status=401)
         
-        if auth_header != Config.API_KEY:
+        if auth_header != Config.SECRET_KEY:
             return json({"error": "Invalid token."}, status=401)
 
         return await f(*args, **kwargs)

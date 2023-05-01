@@ -3,17 +3,34 @@ from sanic.response import json
 from api import *
 from config import *
 from sanic_cors import CORS, cross_origin
-from sanic_openapi import openapi3_blueprint
+from sanic_openapi import openapi2_blueprint, doc
 
 
 app = Sanic(__name__)
 app.blueprint(api)
-app.blueprint(openapi3_blueprint)
+app.blueprint(openapi2_blueprint)
+app.config["API_TITLE"] = "Hikka HOST API"
+app.config["API_SECURITY"] = [{"ApiKeyAuth": []}]
+app.config["API_SECURITY_DEFINITIONS"] = {
+    "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "Authorization"}
+}
+app.config["API_SCHEMES"] = ["https"]
 CORS(app)
 
 
 @app.route('/')
 async def test(request):
+    """
+    Test route
+
+    openapi:
+    ---
+    parameters:
+      - name: limit
+        in: query
+        description: How many items to return at one time (max 100)
+        required: true
+    """
     return json({'hello': 'world'})
 
 
