@@ -7,7 +7,7 @@ CONTAINER = {
     "cpu_period": 50000,
     "cpu_quota": 25000,
     "mem_limit": "1g",
-    "image": "hikka:latest",
+    "image": "vsecoder/hikka:latest",
     "ip": ""
 }
 
