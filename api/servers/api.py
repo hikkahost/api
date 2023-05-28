@@ -9,7 +9,9 @@ from src.container import (
     restart,
     containers_list,
     get_number_of_containers,
-    logs
+    logs,
+    wait,
+    payment
 )
 from sanic_openapi import openapi2_blueprint, doc
 
@@ -72,6 +74,8 @@ async def action_api(request):
         'start': start,
         'stop': stop,
         'restart': restart,
+        'wait': wait,
+        'payment': 'payment
     }
 
     action = actions.get(type)
