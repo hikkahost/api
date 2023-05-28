@@ -75,7 +75,7 @@ async def action_api(request):
         'stop': stop,
         'restart': restart,
         'wait': wait,
-        'payment': 'payment
+        'payment': payment
     }
 
     action = actions.get(type)
