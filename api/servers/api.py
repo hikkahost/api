@@ -82,8 +82,8 @@ async def action_api(request):
 
     try:
         name = request.args['name'][0]
-        action(name)
-        return json({'message': 'action completed'})
+        action_output = action(name)
+        return json(action_output) if action_output else json({'message': 'action completed'})
     except Exception as e:
         return json({'error': str(e)}, status=400)
 
