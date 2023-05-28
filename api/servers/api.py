@@ -22,9 +22,9 @@ async def ping(request):
     return json({'message': 'pong'})
 
 
-@api.route('/create/<name>/<port>', methods=['GET'])
+@api.route('/create', methods=['GET'])
 @protect
-async def create_api(request, port, name):
+async def create_api(request):
     """
     Create a container
 
@@ -41,15 +41,16 @@ async def create_api(request, port, name):
         required: true
     """
     try:
+        port, name = request.args['port'][0], request.args['name'][0]
         create(port, name)
         return json({'message': 'created'})
     except Exception as e:
         return json({'error': str(e)}, status=400)
 
 
-@api.route('/action/<type>/<name>', methods=['GET'])
+@api.route('/action', methods=['GET'])
 @protect
-async def action_api(request, type, name):
+async def action_api(request):
     """
     Perform an action on a container
 
@@ -65,6 +66,8 @@ async def action_api(request, type, name):
         description: Name of the container
         required: true
     """
+    type = request.args['type'][0]
+
     actions = {
         'start': start,
         'stop': stop,
@@ -74,6 +77,7 @@ async def action_api(request, type, name):
     action = actions.get(type)
 
     try:
+        name = request.args['name'][0]
         action(name)
         return json({'message': 'action completed'})
     except Exception as e:
@@ -103,9 +107,9 @@ async def number_api(request):
     except Exception as e:
         return json({'error': str(e)}, status=400)
     
-@api.route('/logs/<name>', methods=['GET'])
+@api.route('/logs', methods=['GET'])
 @protect
-async def logs_api(request, name):
+async def logs_api(request):
     """
     Get logs of a container
     
@@ -118,6 +122,7 @@ async def logs_api(request, name):
         required: true
     """
     try:
+        name = request.args['name'][0]
         return json({'logs': logs(name)})
     except Exception as e:
         return json({'error': str(e)}, status=400)
