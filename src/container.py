@@ -51,5 +51,5 @@ def get_number_of_containers():
 
 
 def logs(name):
-    log = client.containers.get(name).logs(tail=0, follow=False).decode("utf-8")
+    log = client.containers.get(name).logs(tail='all', follow=False).decode("utf-8")
     return log
