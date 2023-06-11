@@ -4,14 +4,13 @@ from config import CONTAINER
 
 client = docker.from_env()
 
-docker_waiting = []
-
 def create(port, name):
     client.containers.run(
         CONTAINER['image'],
         cpu_period=CONTAINER['cpu_period'],
         cpu_quota=CONTAINER['cpu_quota'],
         mem_limit=CONTAINER['mem_limit'],
+        restart_policy={"Name": "unless-stopped"},
         name=name,
         ports={8080: port},
         detach=True,
@@ -52,15 +51,5 @@ def get_number_of_containers():
 
 
 def logs(name):
-    log = client.containers.get(name).logs(tail=0, follow=True).decode("utf-8")
+    log = client.containers.get(name).logs(tail=0, follow=False).decode("utf-8")
     return log
-
-def wait(name):
-    docker_waiting.append(name)
-    stop(name)
-    return {"message": "waiting for payment"}
-
-def payment(name):
-    docker_waiting.remove(name)
-    start(name)
-    return {"message": "payment received"}

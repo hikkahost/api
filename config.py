@@ -6,7 +6,7 @@ import os
 CONTAINER = {
     "cpu_period": 50000,
     "cpu_quota": 25000,
-    "mem_limit": "1g",
+    "mem_limit": "3g",
     "image": "vsecoder/hikka:latest",
     "ip": ""
 }
