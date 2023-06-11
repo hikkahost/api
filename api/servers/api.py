@@ -9,9 +9,7 @@ from src.container import (
     restart,
     containers_list,
     get_number_of_containers,
-    logs,
-    wait,
-    payment
+    logs
 )
 from sanic_openapi import openapi2_blueprint, doc
 
