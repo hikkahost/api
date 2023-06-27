@@ -56,5 +56,5 @@ def execute(name, command):
 
 
 def stats(name):
-    stats = client.containers.get(name).stats(decode=True, stream=False)
+    stats = client.containers.get(name).stats(stream=False)
     return stats
