@@ -9,20 +9,21 @@ from src.container import (
     restart,
     containers_list,
     get_number_of_containers,
-    logs
+    logs,
+    execute,
+    stats,
 )
 from sanic_openapi import openapi2_blueprint, doc
 
-api = Blueprint('event', url_prefix='/host')
+api = Blueprint("event", url_prefix="/host")
 
 
-
-@api.route('/ping', methods=['GET'])
+@api.route("/ping", methods=["GET"])
 async def ping(request):
-    return json({'message': 'pong'})
+    return json({"message": "pong"})
 
 
-@api.route('/create', methods=['GET'])
+@api.route("/create", methods=["GET"])
 @protect
 async def create_api(request):
     """
@@ -41,14 +42,14 @@ async def create_api(request):
         required: true
     """
     try:
-        port, name = request.args['port'][0], request.args['name'][0]
+        port, name = request.args["port"][0], request.args["name"][0]
         create(port, name)
-        return json({'message': 'created'})
+        return json({"message": "created"})
     except Exception as e:
-        return json({'error': str(e)}, status=400)
+        return json({"error": str(e)}, status=400)
 
 
-@api.route('/action', methods=['GET'])
+@api.route("/action", methods=["GET"])
 @protect
 async def action_api(request):
     """
@@ -66,53 +67,54 @@ async def action_api(request):
         description: Name of the container
         required: true
     """
-    type = request.args['type'][0]
+    type = request.args["type"][0]
 
-    actions = {
-        'start': start,
-        'stop': stop,
-        'restart': restart
-    }
+    actions = {"start": start, "stop": stop, "restart": restart}
 
     action = actions.get(type)
 
     try:
-        name = request.args['name'][0]
+        name = request.args["name"][0]
         action_output = action(name)
-        return json(action_output) if action_output else json({'message': 'action completed'})
+        return (
+            json(action_output)
+            if action_output
+            else json({"message": "action completed"})
+        )
     except Exception as e:
-        return json({'error': str(e)}, status=400)
+        return json({"error": str(e)}, status=400)
 
 
-@api.route('/list', methods=['GET'])
+@api.route("/list", methods=["GET"])
 @protect
 async def list_api(request):
     """
     Get a list of containers
     """
     try:
-        return json({'list': containers_list()})
+        return json({"list": containers_list()})
     except Exception as e:
-        return json({'error': str(e)}, status=400)
+        return json({"error": str(e)}, status=400)
 
 
-@api.route('/number', methods=['GET'])
+@api.route("/number", methods=["GET"])
 @protect
 async def number_api(request):
     """
     Get a number of containers
     """
     try:
-        return json({'number': get_number_of_containers()})
+        return json({"number": get_number_of_containers()})
     except Exception as e:
-        return json({'error': str(e)}, status=400)
-    
-@api.route('/logs', methods=['GET'])
+        return json({"error": str(e)}, status=400)
+
+
+@api.route("/logs", methods=["GET"])
 @protect
 async def logs_api(request):
     """
     Get logs of a container
-    
+
     openapi:
     ---
     parameters:
@@ -122,7 +124,54 @@ async def logs_api(request):
         required: true
     """
     try:
-        name = request.args['name'][0]
-        return json({'logs': logs(name)})
+        name = request.args["name"][0]
+        return json({"logs": logs(name)})
     except Exception as e:
-        return json({'error': str(e)}, status=400)
+        return json({"error": str(e)}, status=400)
+
+
+@api.route("/exec", methods=["GET"])
+@protect
+async def exec_api(request):
+    """
+    Execute a command in a container
+
+    openapi:
+    ---
+    parameters:
+      - name: name
+        in: query
+        description: Name of the container
+        required: true
+      - name: command
+        in: query
+        description: Command to execute
+        required: true
+    """
+    try:
+        name = request.args["name"][0]
+        command = request.args["command"][0]
+        return json({"exec": execute(name, command)})
+    except Exception as e:
+        return json({"error": str(e)}, status=400)
+
+
+@api.route("/stats", methods=["GET"])
+@protect
+async def stats_api(request):
+    """
+    Get stats of a container
+
+    openapi:
+    ---
+    parameters:
+      - name: name
+        in: query
+        description: Name of the container
+        required: true
+    """
+    try:
+        name = request.args["name"][0]
+        return json({"stats": stats(name)})
+    except Exception as e:
+        return json({"error": str(e)}, status=400)
