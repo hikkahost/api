@@ -14,6 +14,7 @@ from src.container import (
     stats,
 )
 from sanic_openapi import openapi2_blueprint, doc
+from utils.resources import get_server_resources
 
 api = Blueprint("event", url_prefix="/host")
 
@@ -173,5 +174,16 @@ async def stats_api(request):
     try:
         name = request.args["name"][0]
         return json({"stats": stats(name)})
+    except Exception as e:
+        return json({"error": str(e)}, status=400)
+
+
+@api.route("/resources", methods=["GET"])
+async def resources_api(request):
+    """
+    Get resources of a server
+    """
+    try:
+        return json({"resources": get_server_resources()})
     except Exception as e:
         return json({"error": str(e)}, status=400)

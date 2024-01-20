@@ -19,3 +19,4 @@ SQLAlchemy==1.4.46
 typing_extensions==4.4.0
 websockets==10.4
 docker
+psutil
