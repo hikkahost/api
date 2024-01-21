@@ -12,6 +12,7 @@ from src.container import (
     logs,
     execute,
     stats,
+    remove,
 )
 from sanic_openapi import openapi2_blueprint, doc
 from utils.resources import get_server_resources
@@ -185,5 +186,17 @@ async def resources_api(request):
     """
     try:
         return json({"resources": get_server_resources()})
+    except Exception as e:
+        return json({"error": str(e)}, status=400)
+
+
+@api.route("/remove", methods=["GET"])
+@protect
+async def remove_api(request):
+    """
+    Remove a container
+    """
+    try:
+        return json({"remove": remove(request.args["name"][0])})
     except Exception as e:
         return json({"error": str(e)}, status=400)

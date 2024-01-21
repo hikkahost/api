@@ -58,3 +58,11 @@ def execute(name, command):
 def stats(name):
     stats = client.containers.get(name).stats(stream=False)
     return stats
+
+
+def remove(name):
+    try:
+        stop(name)
+    except:
+        pass
+    client.containers.get(name).remove(force=True)
