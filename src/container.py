@@ -56,8 +56,10 @@ def execute(name, command):
 
 
 def stats(name):
-    stats = client.containers.get(name).stats(stream=False)
-    return stats
+    container = client.containers.get(name)
+    if container.status != "running":
+        return None
+    return client.containers.get(name).stats(stream=False)
 
 
 def remove(name):

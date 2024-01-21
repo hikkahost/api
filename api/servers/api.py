@@ -179,6 +179,29 @@ async def stats_api(request):
         return json({"error": str(e)}, status=400)
 
 
+@api.route("/status", methods=["GET"])
+@protect
+async def status_api(request):
+    """
+    Get status of a container
+
+    openapi:
+    ---
+    parameters:
+      - name: name
+        in: query
+        description: Name of the container
+        required: true
+    """
+    try:
+        name = request.args["name"][0]
+        if stats(name) is None:
+            return json({"status": "stopped"})
+        return json({"status": "running"})
+    except Exception as e:
+        return json({"error": str(e)}, status=400)
+
+
 @api.route("/resources", methods=["GET"])
 async def resources_api(request):
     """
