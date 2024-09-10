@@ -1,8 +1,8 @@
-import docker
+#import docker
 from config import CONTAINER
 
 
-client = docker.from_env()
+#client = docker.from_env()
 
 
 def create(port, name):
@@ -59,7 +59,17 @@ def stats(name):
     container = client.containers.get(name)
     if container.status != "running":
         return None
-    return client.containers.get(name).stats(stream=False)
+    return container.stats(stream=False)
+
+
+def inspect(name):
+    try:
+        container = client.containers.get(name)
+        if container.status != "running":
+            return None
+        return container.inspect_container()
+    except Exception:
+        return None
 
 
 def remove(name):

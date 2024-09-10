@@ -8,7 +8,6 @@ from sanic_openapi import openapi2_blueprint, doc
 
 app = Sanic(__name__)
 app.blueprint(api)
-app.blueprint(openapi2_blueprint)
 app.config["API_TITLE"] = "Hikka HOST API"
 app.config["API_SECURITY"] = [{"ApiKeyAuth": []}]
 app.config["API_SECURITY_DEFINITIONS"] = {

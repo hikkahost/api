@@ -13,8 +13,8 @@ from src.container import (
     execute,
     stats,
     remove,
+    inspect
 )
-from sanic_openapi import openapi2_blueprint, doc
 from utils.resources import get_server_resources
 
 api = Blueprint("event", url_prefix="/host")
@@ -174,7 +174,10 @@ async def stats_api(request):
     """
     try:
         name = request.args["name"][0]
-        return json({"stats": stats(name)})
+        return json({
+            "stats": stats(name),
+            "inspect": inspect(name)
+        })
     except Exception as e:
         return json({"error": str(e)}, status=400)
 
