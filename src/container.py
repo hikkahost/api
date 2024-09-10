@@ -1,8 +1,8 @@
-#import docker
+import docker
 from config import CONTAINER
 
 
-#client = docker.from_env()
+client = docker.from_env()
 
 
 def create(port, name):
