@@ -1,7 +1,6 @@
 from sanic import Sanic
 from sanic.response import json
-from api import *
-from config import *
+from router import api
 from sanic_cors import CORS, cross_origin
 from sanic_openapi import openapi2_blueprint, doc
 
@@ -13,7 +12,9 @@ app.config["API_SECURITY"] = [{"ApiKeyAuth": []}]
 app.config["API_SECURITY_DEFINITIONS"] = {
     "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "Authorization"}
 }
-app.config["API_SCHEMES"] = ["https"]
+app.config["API_SCHEMES"] = ["https", "http"]
+#openapi2_blueprint.url_prefix = "/api/v1"
+#app.blueprint(openapi2_blueprint)
 CORS(app)
 
 

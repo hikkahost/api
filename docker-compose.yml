@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  hikka_worker:
+    image: vsecoder/hikka:latest
+    container_name: "${CONTAINER_NAME:-hikka_worker}"
+    restart: unless-stopped
+    ports:
+      - "${EXTERNAL_PORT:-8080}:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-1.0}"
+          memory: "${MEMORY_LIMIT:-512M}"
+    networks:
+      hikka_net:
+        ipv4_address: "${IP_PREFIX:-192.168.100}.101"
+    environment:
+      - HIKKAHOST=true
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/data
+
+volumes:
+  hikka_data:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=${TMPFS_SIZE:-3G}
+
+networks:
+  hikka_net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: "${BRIDGE_NAME:-hikka_bridge}"
+    ipam:
+      config:
+        - subnet: "${IP_PREFIX:-192.168.100}.0/24"

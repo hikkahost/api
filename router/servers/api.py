@@ -221,6 +221,14 @@ async def resources_api(request):
 async def remove_api(request):
     """
     Remove a container
+
+    openapi:
+    ---
+    parameters:
+      - name: name
+        in: query
+        description: Name of the container
+        required: true
     """
     try:
         return json({"remove": remove(request.args["name"][0])})
