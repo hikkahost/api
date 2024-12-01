@@ -3,6 +3,7 @@ import random
 import shutil
 import docker
 from python_on_whales import DockerClient
+from config import CONTAINER
 
 
 client = docker.from_env()
@@ -16,10 +17,10 @@ def create(port, name):
     env = f"""
 CONTAINER_NAME={name}
 EXTERNAL_PORT={port}
-CPU_LIMIT=1.0
-MEMORY_LIMIT=512M
+CPU_LIMIT={CONTAINER['cpu']}
+MEMORY_LIMIT={CONTAINER['memory']}
 IP_PREFIX=192.168.{ip_prefix}
-TMPFS_SIZE=3G
+TMPFS_SIZE={CONTAINER['size']}
 BRIDGE_NAME=br-{name}
 """
     with open(os.path.join(path, ".env"), "w") as f:
@@ -32,6 +33,19 @@ BRIDGE_NAME=br-{name}
 
     docker.compose.build()
     docker.compose.up(detach=True)
+
+    # first level, iptables
+    os.system(
+        f"sudo iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
+    )
+
+    # second level, tc
+    os.system(
+        (
+            f"tc qdisc add dev br-{name} root tbf rate {CONTAINER['rate']} "
+            f"burst {CONTAINER['burst']} latency {CONTAINER['latency']}"
+        )
+    )
 
 
 def stop(name):

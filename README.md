@@ -4,19 +4,22 @@
 docker pull vsecoder/hikka:latest # https://hub.docker.com/r/vsecoder/hikka
 ```
 
-Change in ```config.py``` the ```SECRET_KEY``` and IP.
+Change in ```config.py``` the ```SECRET_KEY```.
 
 ## Config
 
 ```python
 CONTAINER = {
-    "cpu_period": 50000,
-    "cpu_quota": 25000,
-    "mem_limit": "3g",
-    "image": "vsecoder/hikka:latest",
-    "ip": "..."
+    # docker params
+    "cpu": 1.0,
+    "memory": "512M",
+    "size": "3g",
+    # network params
+    "rate": "50mbit",
+    "burst": "32kbit",
+    "latency": "400ms",
 }
 
 class Config:
-    SECRET_KEY = "..."
+    SECRET_KEY = "secret"
 ```
