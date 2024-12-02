@@ -1,7 +1,6 @@
 from sanic import Blueprint
 from sanic.response import json
 from utils.decorators.auth import protect
-from datetime import *
 from src.container import (
     create,
     stop,

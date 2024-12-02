@@ -36,7 +36,7 @@ BRIDGE_NAME=br-{name}
 
     # first level, iptables
     os.system(
-        f"sudo iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
+        f"iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
     )
 
     # second level, tc
@@ -111,7 +111,7 @@ def remove(name):
     )
     try:
         stop(name)
-    except:
+    except Exception:
         pass
 
     docker.compose.rm(volumes=True)
