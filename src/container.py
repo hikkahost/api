@@ -2,11 +2,23 @@ import os
 import random
 import shutil
 import docker
+import requests
 from python_on_whales import DockerClient
 from config import CONTAINER
 
 
 client = docker.from_env()
+
+
+def check_ip(ip_prefix: int) -> bool:
+    url = f"http://192.168.{ip_prefix}.101:8080"
+    try:
+        requests.get(url)
+        return True
+    # ConnectTimeoutError or anothers
+    except Exception:
+        return False
+
 
 def create(port, name):
     path = os.path.join(os.getcwd(), "volumes", name)
@@ -14,6 +26,12 @@ def create(port, name):
     os.mkdir(os.path.join(path, "data"))
     shutil.copy("./docker-compose.yml", path)
     ip_prefix = random.randint(100, 255)
+
+    for _ in range(10):
+        if check_ip(ip_prefix):
+            break
+        ip_prefix = random.randint(100, 255)
+
     env = f"""
 CONTAINER_NAME={name}
 EXTERNAL_PORT={port}
