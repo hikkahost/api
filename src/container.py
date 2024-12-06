@@ -2,7 +2,8 @@ import os
 import random
 import shutil
 import docker
-import requests
+import socket
+
 from python_on_whales import DockerClient
 from config import CONTAINER
 
@@ -11,13 +12,10 @@ client = docker.from_env()
 
 
 def check_ip(ip_prefix: int) -> bool:
-    url = f"http://192.168.{ip_prefix}.101:8080"
-    try:
-        requests.get(url)
-        return True
-    # ConnectTimeoutError or anothers
-    except Exception:
-        return False
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((f"192.168.{ip_prefix}.101", 8080))
+    sock.close()
+    return result == 0
 
 
 def create(port, name):
@@ -30,7 +28,8 @@ def create(port, name):
     for _ in range(10):
         if check_ip(ip_prefix):
             break
-        ip_prefix = random.randint(100, 255)
+        else:
+            ip_prefix = random.randint(100, 255)
 
     env = f"""
 CONTAINER_NAME={name}
@@ -41,6 +40,7 @@ IP_PREFIX=192.168.{ip_prefix}
 TMPFS_SIZE={CONTAINER['size']}
 BRIDGE_NAME=br-{name}
 """
+
     with open(os.path.join(path, ".env"), "w") as f:
         f.write(env)
 
