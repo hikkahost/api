@@ -1,11 +1,11 @@
 from sanic import Sanic
 from sanic.response import json
-from router import api
+from app.handlers import api
 from sanic_cors import CORS # , cross_origin
 #from sanic_openapi import openapi2_blueprint, doc
 
 
-app = Sanic(__name__)
+app = Sanic('hh-api')
 app.blueprint(api)
 app.config["API_TITLE"] = "Hikka HOST API"
 app.config["API_SECURITY"] = [{"ApiKeyAuth": []}]

@@ -1,11 +1,11 @@
 import os
-import random
 import shutil
 import docker
 import socket
 
 from python_on_whales import DockerClient
-from config import CONTAINER
+from app.config import CONTAINER
+from app.src.lookup import find_free_ip
 
 
 client = docker.from_env()
@@ -13,6 +13,7 @@ client = docker.from_env()
 
 def check_ip(ip_prefix: int) -> bool:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(10.0)
     result = sock.connect_ex((f"192.168.{ip_prefix}.101", 8080))
     sock.close()
     return result == 0
@@ -23,13 +24,7 @@ def create(port, name):
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))
     shutil.copy("./docker-compose.yml", path)
-    ip_prefix = random.randint(100, 255)
-
-    for _ in range(10):
-        if check_ip(ip_prefix):
-            break
-        else:
-            ip_prefix = random.randint(100, 255)
+    ip_prefix = find_free_ip(range(0, 256))
 
     env = f"""
 CONTAINER_NAME={name}

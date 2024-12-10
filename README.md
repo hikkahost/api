@@ -1,5 +1,7 @@
 # hikkahost_api
 
+!!! NEED PYTHON 3.8 !!!
+
 ```
 docker pull vsecoder/hikka:latest # https://hub.docker.com/r/vsecoder/hikka
 ```

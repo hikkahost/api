@@ -1,6 +1,6 @@
 from functools import wraps
 from sanic.response import json
-from config import Config
+from app.config import Config
 
 
 def protect(f):

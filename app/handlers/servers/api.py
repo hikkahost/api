@@ -1,7 +1,7 @@
 from sanic import Blueprint
 from sanic.response import json
-from utils.decorators.auth import protect
-from src.container import (
+from app.utils.decorators.auth import protect
+from app.src.container import (
     create,
     stop,
     start,
@@ -14,7 +14,7 @@ from src.container import (
     remove,
     inspect
 )
-from utils.resources import get_server_resources
+from app.utils.resources import get_server_resources
 
 api = Blueprint("event", url_prefix="/host")
 
