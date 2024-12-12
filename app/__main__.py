@@ -2,7 +2,7 @@ from sanic import Sanic
 from sanic.response import json
 from app.handlers import api
 from sanic_cors import CORS # , cross_origin
-#from sanic_openapi import openapi2_blueprint, doc
+# from sanic_openapi import openapi2_blueprint, doc
 
 
 app = Sanic('hh-api')
@@ -13,8 +13,8 @@ app.config["API_SECURITY_DEFINITIONS"] = {
     "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "Authorization"}
 }
 app.config["API_SCHEMES"] = ["https", "http"]
-#openapi2_blueprint.url_prefix = "/api/v1"
-#app.blueprint(openapi2_blueprint)
+# openapi2_blueprint.url_prefix = "/api/v1"
+# app.blueprint(openapi2_blueprint)
 CORS(app)
 
 
@@ -40,4 +40,4 @@ async def handle_exception(request, exception):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True, auto_reload=True)
+    app.run(host="0.0.0.0", port=8000, single_process=True)

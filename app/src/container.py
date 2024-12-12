@@ -41,7 +41,7 @@ BRIDGE_NAME=br-{name}
 
     docker = DockerClient(
         compose_files=[os.path.join(path, "docker-compose.yml")],
-        compose_env_file=os.path.join(path, ".env"),
+        compose_env_files=[os.path.join(path, ".env")],
     )
 
     docker.compose.build()

@@ -22,7 +22,7 @@ def find_free_ip(ip_prefix_range):
 
 if __name__ == "__main__":
     ip_prefix_range = range(0, 256)
-    free_ip = find_free_ip(ip_prefix_range)
+    ip_prefix = find_free_ip(ip_prefix_range)
     if free_ip is None:
         print("Свободный IP:", f"192.168.{ip_prefix}.101")
     else:
