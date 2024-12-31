@@ -24,6 +24,50 @@ async def test_create_container(app):
 
 
 @pytest.mark.anyio
+async def test_stop_container(app):
+    """Тест остановки контейнера."""
+    params = {"type": "stop", "name": "test"}
+    request, response = await app.asgi_client.get(
+        "/api/host/action", params=params, headers={"Authorization": "secret"}
+    )
+    assert response.status == 200
+    assert response.json == {"message": "action completed"}
+
+
+@pytest.mark.anyio
+async def test_create_container2(app):
+    """Тест создания контейнера 2."""
+    params = {"port": "8081", "name": "test2"}
+    request, response = await app.asgi_client.get(
+        "/api/host/create", params=params, headers={"Authorization": "secret"}
+    )
+    assert response.status == 200
+    assert response.json == {"message": "created"}
+
+
+@pytest.mark.anyio
+async def test_remove_container2(app):
+    """Тест удаления контейнера 2."""
+    params = {"name": "test2"}
+    request, response = await app.asgi_client.get(
+        "/api/host/remove", params=params, headers={"Authorization": "secret"}
+    )
+    assert response.status == 200
+    assert "remove" in response.json
+
+
+@pytest.mark.anyio
+async def test_start_container(app):
+    """Тест запуска контейнера."""
+    params = {"type": "start", "name": "test"}
+    request, response = await app.asgi_client.get(
+        "/api/host/action", params=params, headers={"Authorization": "secret"}
+    )
+    assert response.status == 200
+    assert response.json == {"message": "action completed"}
+
+
+@pytest.mark.anyio
 async def test_list_containers(app):
     """Тест получения списка контейнеров."""
     request, response = await app.asgi_client.get(
@@ -99,28 +143,6 @@ async def test_server_resources(app):
     )
     assert response.status == 200
     assert "resources" in response.json
-
-
-@pytest.mark.anyio
-async def test_stop_container(app):
-    """Тест остановки контейнера."""
-    params = {"type": "stop", "name": "test"}
-    request, response = await app.asgi_client.get(
-        "/api/host/action", params=params, headers={"Authorization": "secret"}
-    )
-    assert response.status == 200
-    assert response.json == {"message": "action completed"}
-
-
-@pytest.mark.anyio
-async def test_start_container(app):
-    """Тест запуска контейнера."""
-    params = {"type": "start", "name": "test"}
-    request, response = await app.asgi_client.get(
-        "/api/host/action", params=params, headers={"Authorization": "secret"}
-    )
-    assert response.status == 200
-    assert response.json == {"message": "action completed"}
 
 
 @pytest.mark.anyio

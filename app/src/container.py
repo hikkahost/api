@@ -50,7 +50,7 @@ BRIDGE_NAME=br-{name}
 
     docker = DockerClient(
         compose_files=[os.path.join(path, "docker-compose.yml")],
-        compose_env_files=[os.path.join(path, ".env")],
+        compose_env_file=os.path.join(path, ".env"),
     )
 
     docker.compose.build()
@@ -127,16 +127,19 @@ def inspect(name):
 
 
 def remove(name):
-    path = os.path.join(os.getcwd(), "volumes", name)
-    docker = DockerClient(
-        compose_files=[os.path.join(path, "docker-compose.yml")],
-    )
     try:
-        stop(name)
-    except Exception:
-        pass
-    docker.compose.rm(volumes=True)
-    #os.system(f"docker network rm {name}_hikka_net")
-    client.networks.get(f"{name}_hikka_net").remove()
-    shutil.rmtree(path)
-    return
+        path = os.path.join(os.getcwd(), "volumes", name)
+        docker = DockerClient(
+            compose_files=[os.path.join(path, "docker-compose.yml")],
+        )
+        try:
+            stop(name)
+        except Exception:
+            pass
+        docker.compose.rm(volumes=True)
+        #os.system(f"docker network rm {name}_hikka_net")
+        client.networks.get(f"{name}_hikka_net").remove()
+        shutil.rmtree(path)
+        return
+    except:
+        return
