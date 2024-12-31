@@ -5,18 +5,21 @@ import socket
 
 from python_on_whales import DockerClient
 from app.config import CONTAINER
-from app.src.lookup import find_free_ip
 
 
 client = docker.from_env()
 
 
 def check_ip(ip_prefix: int) -> bool:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(10.0)
-    result = sock.connect_ex((f"192.168.{ip_prefix}.101", 8080))
-    sock.close()
-    return result == 0
+    docker_client = DockerClient()
+    networks = docker_client.network.list()
+
+    for network in networks:
+        if not network.ipam.config:
+            continue
+        if network.ipam.config[0]['Subnet'] == f'192.168.{ip_prefix}.0/24':
+            return 0
+    return 1
 
 
 def create(port, name):
@@ -24,7 +27,13 @@ def create(port, name):
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))
     shutil.copy("./docker-compose.yml", path)
-    ip_prefix = find_free_ip(range(0, 256))
+    ip_prefix = None
+
+    for ip in range(1, 256):
+        check = check_ip(ip)
+        if check:
+            ip_prefix = ip
+            break
 
     env = f"""
 CONTAINER_NAME={name}
@@ -49,15 +58,15 @@ BRIDGE_NAME=br-{name}
 
     # first level, iptables
     os.system(
-        f"iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
+       f"iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
     )
-
+    
     # second level, tc
     os.system(
-        (
-            f"tc qdisc add dev br-{name} root tbf rate {CONTAINER['rate']} "
-            f"burst {CONTAINER['burst']} latency {CONTAINER['latency']}"
-        )
+       (
+           f"tc qdisc add dev br-{name} root tbf rate {CONTAINER['rate']} "
+           f"burst {CONTAINER['burst']} latency {CONTAINER['latency']}"
+       )
     )
 
 
