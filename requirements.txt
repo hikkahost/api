@@ -19,7 +19,6 @@ websockets==10.4
 typing_extensions==4.7.1
 docker
 psutil
-pydantic==2.0.3
 python-on-whales
 sanic-testing
 pytest>=7.0
@@ -31,3 +30,5 @@ pytest-asyncio
 pytest-tornasync
 pytest-trio
 twisted
+pydantic==1.10.14
+protobuf==3.20.3
