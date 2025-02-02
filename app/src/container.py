@@ -105,7 +105,7 @@ def logs(name):
 
 
 def execute(name, command):
-    exec = client.containers.get(name).exec_run(command)
+    exec = client.containers.get(name).exec_run(f"bash -c '{command}'")
     return {"exit_code": exec[0], "output": exec[1].decode("utf-8")}
 
 
