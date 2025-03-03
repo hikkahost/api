@@ -68,6 +68,17 @@ async def test_start_container(app):
 
 
 @pytest.mark.anyio
+async def test_recreate_container(app):
+    """Тест запуска контейнера."""
+    params = {"type": "recreate", "name": "test"}
+    request, response = await app.asgi_client.get(
+        "/api/host/action", params=params, headers={"Authorization": "secret"}
+    )
+    assert response.status == 200
+    assert response.json == {"message": "action completed"}
+
+
+@pytest.mark.anyio
 async def test_list_containers(app):
     """Тест получения списка контейнеров."""
     request, response = await app.asgi_client.get(

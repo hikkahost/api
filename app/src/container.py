@@ -75,6 +75,11 @@ def stop(name):
     return
 
 
+def kill(name):
+    client.containers.get(name).kill()
+    return
+
+
 def start(name):
     client.containers.get(name).start()
     return
@@ -133,7 +138,7 @@ def remove(name):
             compose_files=[os.path.join(path, "docker-compose.yml")],
         )
         try:
-            stop(name)
+            kill(name)
         except Exception:
             pass
         docker.compose.rm(volumes=True)
@@ -143,3 +148,14 @@ def remove(name):
         return
     except:
         return
+
+
+def recreate(name, force_recreate=False):
+    path = os.path.join(os.getcwd(), "volumes", name)
+    docker = DockerClient(
+        compose_files=[os.path.join(path, "docker-compose.yml")],
+        compose_env_file=os.path.join(path, ".env"),
+    )
+
+    docker.compose.create(force_recreate=force_recreate)
+    docker.compose.start()

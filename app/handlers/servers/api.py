@@ -12,7 +12,8 @@ from app.src.container import (
     execute,
     stats,
     remove,
-    inspect
+    inspect,
+    recreate
 )
 from app.utils.resources import get_server_resources
 
@@ -70,7 +71,12 @@ async def action_api(request):
     """
     type = request.args["type"][0]
 
-    actions = {"start": start, "stop": stop, "restart": restart}
+    actions = {
+        "start": start, 
+        "stop": stop, 
+        "restart": restart, 
+        "recreate": recreate
+    }
 
     action = actions.get(type)
 
