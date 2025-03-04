@@ -22,16 +22,6 @@ CONTAINER = {
     "latency": "400ms",
 }
 
-SUPPORTED_USERBOTS = [
-    "hikka",
-    "heroku"
-]
-
-USERBOTS = {
-    "hikka": "vsecoder/hikka:latest",
-    "heroku": "vsecoder/hikka:fork-codrago"
-}
-
 class Config:
     SECRET_KEY = "secret"
 ```

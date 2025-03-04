@@ -26,7 +26,7 @@ async def test_create_container_hikka(app):
 @pytest.mark.anyio
 async def test_create_container_heroku(app):
     """Тест создания контейнера 2."""
-    params = {"port": "8081", "name": "test2", "userbot": "heroku"}
+    params = {"port": "8081", "name": "test2", "userbot": "vsecoder/hikka:fork-codrago"}
     request, response = await app.asgi_client.get(
         "/api/host/create", params=params, headers={"Authorization": "secret"}
     )

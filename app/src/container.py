@@ -3,7 +3,7 @@ import shutil
 import docker
 
 from python_on_whales import DockerClient
-from app.config import CONTAINER, USERBOTS
+from app.config import CONTAINER
 
 
 client = docker.from_env()
@@ -21,7 +21,7 @@ def check_ip(ip_prefix: int) -> bool:
     return 1
 
 
-def create(port, name, userbot = "hikka"):
+def create(port, name, userbot = "vsecoder/hikka:latest"):
     path = os.path.join(os.getcwd(), "volumes", name)
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))
@@ -35,7 +35,7 @@ def create(port, name, userbot = "hikka"):
             break
 
     env = f"""
-IMAGE={USERBOTS[userbot]}
+IMAGE={userbot}
 CONTAINER_NAME={name}
 EXTERNAL_PORT={port}
 CPU_LIMIT={CONTAINER['cpu']}
