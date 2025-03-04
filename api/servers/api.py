@@ -16,7 +16,6 @@ from src.container import (
     inspect
 )
 from utils.resources import get_server_resources
-from config import SUPPORTED_USERBOTS
 
 api = Blueprint("event", url_prefix="/host")
 
@@ -50,10 +49,7 @@ async def create_api(request):
     """
     try:
         port, name = request.args["port"][0], request.args["name"][0]
-        userbot = request.args.get("userbot", "hikka")
-
-        if userbot not in SUPPORTED_USERBOTS:
-            return json({"error": "userbot not supported"}, status=400)
+        userbot = request.args.get("userbot", "vsecoder/hikka:latest")
 
         create(port, name, userbot)
         return json({"message": "created"})

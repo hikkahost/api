@@ -1,5 +1,5 @@
 import docker
-from config import CONTAINER, USERBOTS
+from config import CONTAINER
 
 
 client = docker.from_env()
@@ -7,7 +7,7 @@ client = docker.from_env()
 
 def create(port, name, userbot):
     client.containers.run(
-        USERBOTS[userbot],
+        userbot,
         cpu_period=CONTAINER["cpu_period"],
         cpu_quota=CONTAINER["cpu_quota"],
         mem_limit=CONTAINER["mem_limit"],

@@ -16,15 +16,6 @@ CONTAINER = {
     "ip": "..."
 }
 
-SUPPORTED_USERBOTS = [
-    "hikka",
-    "heroku"
-]
-
-USERBOTS = {
-    "hikka": "vsecoder/hikka:latest",
-    "heroku": "vsecoder/hikka:fork-codrago"
-}
 
 class Config:
     SECRET_KEY = "..."
