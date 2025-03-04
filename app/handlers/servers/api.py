@@ -16,6 +16,7 @@ from app.src.container import (
     recreate
 )
 from app.utils.resources import get_server_resources
+from app.config import SUPPORTED_USERBOTS
 
 api = Blueprint("event", url_prefix="/host")
 
@@ -42,10 +43,19 @@ async def create_api(request):
         in: query
         description: Name of the container
         required: true
+      - name: userbot
+        in: query
+        description: Userbot to use
+        required: false
     """
     try:
         port, name = request.args["port"][0], request.args["name"][0]
-        create(port, name)
+        userbot = request.args.get("userbot", "hikka")
+
+        if userbot not in SUPPORTED_USERBOTS:
+            return json({"error": "userbot not supported"}, status=400)
+
+        create(port, name, userbot)
         return json({"message": "created"})
     except Exception as e:
         return json({"error": str(e)}, status=400)

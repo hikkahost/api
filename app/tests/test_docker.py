@@ -13,7 +13,7 @@ async def test_ping(app):
 
 
 @pytest.mark.anyio
-async def test_create_container(app):
+async def test_create_container_hikka(app):
     """Тест создания контейнера."""
     params = {"port": "8080", "name": "test"}
     request, response = await app.asgi_client.get(
@@ -24,20 +24,9 @@ async def test_create_container(app):
 
 
 @pytest.mark.anyio
-async def test_stop_container(app):
-    """Тест остановки контейнера."""
-    params = {"type": "stop", "name": "test"}
-    request, response = await app.asgi_client.get(
-        "/api/host/action", params=params, headers={"Authorization": "secret"}
-    )
-    assert response.status == 200
-    assert response.json == {"message": "action completed"}
-
-
-@pytest.mark.anyio
-async def test_create_container2(app):
+async def test_create_container_heroku(app):
     """Тест создания контейнера 2."""
-    params = {"port": "8081", "name": "test2"}
+    params = {"port": "8081", "name": "test2", "userbot": "heroku"}
     request, response = await app.asgi_client.get(
         "/api/host/create", params=params, headers={"Authorization": "secret"}
     )

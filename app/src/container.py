@@ -1,10 +1,9 @@
 import os
 import shutil
 import docker
-import socket
 
 from python_on_whales import DockerClient
-from app.config import CONTAINER
+from app.config import CONTAINER, USERBOTS
 
 
 client = docker.from_env()
@@ -22,7 +21,7 @@ def check_ip(ip_prefix: int) -> bool:
     return 1
 
 
-def create(port, name):
+def create(port, name, userbot = "hikka"):
     path = os.path.join(os.getcwd(), "volumes", name)
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))
@@ -36,6 +35,7 @@ def create(port, name):
             break
 
     env = f"""
+IMAGE={USERBOTS[userbot]}
 CONTAINER_NAME={name}
 EXTERNAL_PORT={port}
 CPU_LIMIT={CONTAINER['cpu']}
@@ -60,7 +60,7 @@ BRIDGE_NAME=br-{name}
     os.system(
        f"iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
     )
-    
+
     # second level, tc
     os.system(
        (

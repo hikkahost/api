@@ -1,6 +1,6 @@
 services:
   hikka_worker:
-    image: vsecoder/hikka:latest
+    image: ${IMAGE:-vsecoder/hikka:latest}
     container_name: "${CONTAINER_NAME:-hikka_worker}"
     restart: unless-stopped
     ports:
