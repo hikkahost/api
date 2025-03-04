@@ -23,6 +23,11 @@ def stop(name):
     client.containers.get(name).stop()
 
 
+def kill(name):
+    client.containers.get(name).kill()
+    return
+
+
 def start(name):
     client.containers.get(name).start()
 
@@ -74,7 +79,7 @@ def inspect(name):
 
 def remove(name):
     try:
-        stop(name)
+        kill(name)
     except:
         pass
     client.containers.get(name).remove(force=True)
