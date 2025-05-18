@@ -22,7 +22,7 @@ def check_ip(ip_prefix: int) -> bool:
     return 1
 
 
-def create(port, name, password="secret", userbot="vsecoder/hikka:latest"):
+def create(port, name, userbot="vsecoder/hikka:latest", password="secret"):
     path = os.path.join(os.getcwd(), "volumes", name)
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))

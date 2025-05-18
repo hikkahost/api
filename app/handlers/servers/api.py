@@ -46,12 +46,17 @@ async def create_api(request):
         in: query
         description: Userbot to use
         required: false
+      - name: password
+        in: query
+        description: Password for the basic auth
+        required: false
     """
     try:
         port, name = request.args["port"][0], request.args["name"][0]
         userbot = request.args.get("userbot", "vsecoder/hikka:latest")
+        password = request.args.get("password", "secret")
 
-        create(port, name, userbot)
+        create(port, name, userbot, password)
         return json({"message": "created"})
     except Exception as e:
         return json({"error": str(e)}, status=400)
