@@ -32,3 +32,4 @@ pytest-trio
 twisted
 pydantic==1.10.14
 protobuf==3.20.3
+bcrypt
