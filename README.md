@@ -22,6 +22,8 @@ CONTAINER = {
     "latency": "400ms",
 }
 
+SERVER = "m1"
+
 class Config:
     SECRET_KEY = "secret"
 ```

@@ -3,7 +3,7 @@ import shutil
 import docker
 
 from python_on_whales import DockerClient
-from app.config import CONTAINER
+from app.config import CONTAINER, SERVER
 
 
 client = docker.from_env()
@@ -21,7 +21,7 @@ def check_ip(ip_prefix: int) -> bool:
     return 1
 
 
-def create(port, name, userbot = "vsecoder/hikka:latest"):
+def create(port, name, password="secret", userbot="vsecoder/hikka:latest"):
     path = os.path.join(os.getcwd(), "volumes", name)
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))
@@ -29,8 +29,7 @@ def create(port, name, userbot = "vsecoder/hikka:latest"):
     ip_prefix = None
 
     for ip in range(1, 256):
-        check = check_ip(ip)
-        if check:
+        if check_ip(ip):
             ip_prefix = ip
             break
 
@@ -56,18 +55,15 @@ BRIDGE_NAME=br-{name}
     docker.compose.build()
     docker.compose.up(detach=True)
 
-    # first level, iptables
     os.system(
-       f"iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
+        f"iptables -A OUTPUT -s 192.168.{ip_prefix}.101 -m limit --limit {CONTAINER['rate']} -j ACCEPT"
+    )
+    os.system(
+        f"tc qdisc add dev br-{name} root tbf rate {CONTAINER['rate']} "
+        f"burst {CONTAINER['burst']} latency {CONTAINER['latency']}"
     )
 
-    # second level, tc
-    os.system(
-       (
-           f"tc qdisc add dev br-{name} root tbf rate {CONTAINER['rate']} "
-           f"burst {CONTAINER['burst']} latency {CONTAINER['latency']}"
-       )
-    )
+    create_vhost(name, SERVER, ip_prefix, password)
 
 
 def stop(name):
