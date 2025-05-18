@@ -18,11 +18,11 @@ def check_ip(ip_prefix: int) -> bool:
         if not network.ipam.config:
             continue
         if network.ipam.config[0]['Subnet'] == f'192.168.{ip_prefix}.0/24':
-            return 0
-    return 1
+            return False
+    return True
 
 
-def create(port, name, userbot="vsecoder/hikka:latest", password="secret"):
+def create(port, name, userbot="vsecoder/hikka:latest", password="$2b$12$nr213f0pJnQuCAdLnRTMeODqoniH1YH.Aqp6x2a9Wam01FtLdCB7O"):
     path = os.path.join(os.getcwd(), "volumes", name)
     os.mkdir(path)
     os.mkdir(os.path.join(path, "data"))
@@ -33,6 +33,9 @@ def create(port, name, userbot="vsecoder/hikka:latest", password="secret"):
         if check_ip(ip):
             ip_prefix = ip
             break
+
+    if ip_prefix is None:
+        raise RuntimeError("No available IP prefix found for container network.")
 
     env = f"""
 IMAGE={userbot}

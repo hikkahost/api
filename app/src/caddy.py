@@ -1,5 +1,5 @@
 import os
-import bcrypt
+import re
 from pathlib import Path
 
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
@@ -12,15 +12,9 @@ CADDYFILE_TEMPLATE = """
 }}
 """
 
-
-def generate_hashed_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-
-def create_vhost(username: str, server: str, ip_prefix: int, password: str):
+def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: str):
     fqdn = f"{username}.{server}.hikka.host"
     target_ip = f"192.168.{ip_prefix}.101"
-    hashed_password = generate_hashed_password(password)
 
     config = CADDYFILE_TEMPLATE.format(
         fqdn=fqdn,
@@ -40,6 +34,19 @@ def remove_caddy_user(username, server):
     config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
     if config_path.exists():
         config_path.unlink()
+        reload_caddy()
+    else:
+        print(f"Configuration for {username}.{server} does not exist.")
+
+
+def update_password(username: str, server: str, hashed_password: str):
+    config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
+    if config_path.exists():
+        config = config_path.read_text()
+        regex = r"basicauth\s*{\s*.*?\s*}"
+        config = re.sub(regex, "", config, flags=re.DOTALL)
+        config += f"    basicauth {{\n        {username} {hashed_password}\n    }}\n"
+        config_path.write_text(config)
         reload_caddy()
     else:
         print(f"Configuration for {username}.{server} does not exist.")

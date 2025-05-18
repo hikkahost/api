@@ -16,6 +16,8 @@ from app.src.container import (
     recreate
 )
 from app.utils.resources import get_server_resources
+from app.src.caddy import update_password
+from app.config import SERVER
 
 api = Blueprint("event", url_prefix="/host")
 
@@ -48,13 +50,13 @@ async def create_api(request):
         required: false
       - name: password
         in: query
-        description: Password for the basic auth
+        description: Password hash for the basic auth
         required: false
     """
     try:
         port, name = request.args["port"][0], request.args["name"][0]
         userbot = request.args.get("userbot", "vsecoder/hikka:latest")
-        password = request.args.get("password", "secret")
+        password = request.args.get("password", "$2b$12$nr213f0pJnQuCAdLnRTMeODqoniH1YH.Aqp6x2a9Wam01FtLdCB7O")
 
         create(port, name, userbot, password)
         return json({"message": "created"})
@@ -248,5 +250,32 @@ async def remove_api(request):
     """
     try:
         return json({"remove": remove(request.args["name"][0])})
+    except Exception as e:
+        return json({"error": str(e)}, status=400)
+
+
+@api.route("/update-password", methods=["GET"])
+@protect
+async def update_password_api(request):
+    """
+    Update the password of a container
+
+    openapi:
+    ---
+    parameters:
+      - name: name
+        in: query
+        description: Name of the container
+        required: true
+      - name: password
+        in: query
+        description: Password hash for the basic auth
+        required: true
+    """
+    try:
+        name = request.args["name"][0]
+        password = request.args["password"][0]
+
+        return json({"update": update_password(name, SERVER, password)})
     except Exception as e:
         return json({"error": str(e)}, status=400)
