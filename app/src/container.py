@@ -4,6 +4,7 @@ import docker
 
 from python_on_whales import DockerClient
 from app.config import CONTAINER, SERVER
+from app.src.caddy import create_vhost, remove_caddy_user
 
 
 client = docker.from_env()
@@ -141,6 +142,7 @@ def remove(name):
         #os.system(f"docker network rm {name}_hikka_net")
         client.networks.get(f"{name}_hikka_net").remove()
         shutil.rmtree(path)
+        remove_caddy_user(name, SERVER)
         return
     except:
         return

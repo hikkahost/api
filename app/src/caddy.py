@@ -36,5 +36,26 @@ def create_vhost(username: str, server: str, ip_prefix: int, password: str):
     reload_caddy()
 
 
+def remove_caddy_user(username, server):
+    config_path = "/etc/caddy/Caddyfile"
+    with open(config_path, "r") as f:
+        lines = f.readlines()
+
+    start = None
+    end = None
+    for i, line in enumerate(lines):
+        if line.strip() == f"{username}.{server}.hikka.host {{":
+            start = i
+        if start is not None and line.strip() == "}":
+            end = i
+            break
+
+    if start is not None and end is not None:
+        del lines[start : end + 1]
+        with open(config_path, "w") as f:
+            f.writelines(lines)
+        os.system("systemctl reload caddy")
+
+
 def reload_caddy():
     os.system("caddy reload")
