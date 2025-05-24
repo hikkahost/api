@@ -21,7 +21,7 @@ API_PORT=8000
 # Шаг 1: Обновление и установка зависимостей
 echo "Обновление системы и установка зависимостей..."
 apt update -y
-apt install -y software-properties-common wget git apt-transport-https ca-certificates curl gnupg2
+apt install -y software-properties-common wget git apt-transport-https ca-certificates curl gnupg2 libnss3-tools
 
 # Шаг 2: Добавление репозитория и установка Python 3.8 и docker
 echo "Добавление репозитория и установка Python 3.8 и docker..."
