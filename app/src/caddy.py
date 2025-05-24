@@ -16,6 +16,11 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
     fqdn = f"{username}.{server}.hikka.host"
     target_ip = f"192.168.{ip_prefix}.101"
 
+    config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
+    if config_path.exists():
+        print(f"Configuration for {username}.{server} already exists.")
+        return
+
     config = CADDYFILE_TEMPLATE.format(
         fqdn=fqdn,
         target_ip=target_ip,
@@ -24,7 +29,6 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
     )
 
     os.makedirs(CADDY_CONFIG_PATH, exist_ok=True)
-    config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
     config_path.write_text(config)
 
     reload_caddy()

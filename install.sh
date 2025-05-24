@@ -109,7 +109,7 @@ api.$SERVER_NAME.hikka.host {
 EOL
 
 cat <<EOL > /etc/caddy/Caddyfile
-(import /etc/caddy/conf.d/*.caddy)
+import /etc/caddy/conf.d/*.caddy
 EOL
 
 chown -R root:caddy /etc/caddy
