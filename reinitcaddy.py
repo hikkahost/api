@@ -14,7 +14,7 @@ def containers_list():
 
 
 for container in containers_list():
-    env_path = Path(f"/volumes/{container.name}/.env")
+    env_path = Path(f"volumes/{container.name}/.env")
     if not env_path.exists():
         print(f"Environment file for container {container.name} does not exist.")
         continue
