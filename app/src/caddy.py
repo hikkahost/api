@@ -45,15 +45,25 @@ def remove_caddy_user(username, server):
 
 def update_password(username: str, server: str, hashed_password: str):
     config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
-    if config_path.exists():
-        config = config_path.read_text()
-        regex = r"basicauth\s*{\s*.*?\s*}"
-        config = re.sub(regex, "", config, flags=re.DOTALL)
-        config += f"    basicauth {{\n        {username} {hashed_password}\n    }}\n"
-        config_path.write_text(config)
-        reload_caddy()
-    else:
+
+    if not config_path.exists():
         print(f"Configuration for {username}.{server} does not exist.")
+        return
+
+    config = config_path.read_text()
+
+    config = re.sub(r"(?m)^\s*basicauth\s*\{[^}]*\}\s*", "", config)
+
+    pattern = re.compile(rf"({username}\.{server}\.hikka\.host\s*\{{)", re.MULTILINE)
+    new_auth_block = f"    basicauth {{\n        {username} {hashed_password}\n    }}\n"
+
+    def insert_auth_block(match):
+        return f"{match.group(1)}\n{new_auth_block}"
+
+    config = pattern.sub(insert_auth_block, config)
+
+    config_path.write_text(config)
+    reload_caddy()
 
 
 def reload_caddy():
