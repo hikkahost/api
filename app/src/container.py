@@ -133,6 +133,7 @@ def inspect(name):
 
 def remove(name):
     try:
+        remove_caddy_user(name, SERVER)
         path = os.path.join(os.getcwd(), "volumes", name)
         docker = DockerClient(
             compose_files=[os.path.join(path, "docker-compose.yml")],
@@ -142,10 +143,9 @@ def remove(name):
         except Exception:
             pass
         docker.compose.rm(volumes=True)
-        #os.system(f"docker network rm {name}_hikka_net")
+        # os.system(f"docker network rm {name}_hikka_net")
         client.networks.get(f"{name}_hikka_net").remove()
         shutil.rmtree(path)
-        remove_caddy_user(name, SERVER)
         return
     except:
         return
