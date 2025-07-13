@@ -8,7 +8,7 @@ CADDYFILE_TEMPLATE = """
     import ssl_dns
     reverse_proxy {target_ip}:8080
     basicauth {{
-        {username} {hashed_password}
+        {username} "{hashed_password}"
     }}
 }}
 """
@@ -56,7 +56,7 @@ def update_password(username: str, server: str, hashed_password: str):
     config = re.sub(r"(?m)^\s*basicauth\s*\{[^}]*\}\s*", "", config)
 
     pattern = re.compile(rf"({username}\.{server}\.hikka\.host\s*\{{)", re.MULTILINE)
-    new_auth_block = f"    basicauth {{\n        {username} {hashed_password}\n    }}\n"
+    new_auth_block = f"    basicauth {{\n        {username} \"{hashed_password}\"\n    }}\n"
 
     def insert_auth_block(match):
         return f"{match.group(1)}\n{new_auth_block}"
