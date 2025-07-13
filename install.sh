@@ -109,6 +109,10 @@ api.$SERVER_NAME.hikka.host {
 EOL
 
 cat <<EOL > /etc/caddy/Caddyfile
+(ssl_dns) {
+  tls /etc/ssl/cloudflare-origin.crt /etc/ssl/cloudflare-origin.key
+}
+
 import /etc/caddy/conf.d/*.caddy
 EOL
 

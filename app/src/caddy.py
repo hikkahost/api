@@ -5,6 +5,7 @@ from pathlib import Path
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
 CADDYFILE_TEMPLATE = """
 {fqdn} {{
+    import ssl_dns
     reverse_proxy {target_ip}:8080
     basicauth {{
         {username} {hashed_password}
