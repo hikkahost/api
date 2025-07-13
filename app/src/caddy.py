@@ -68,4 +68,4 @@ def update_password(username: str, server: str, hashed_password: str):
 
 
 def reload_caddy():
-    os.system("caddy reload")
+    os.system("systemctl restart caddy")
