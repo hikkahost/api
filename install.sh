@@ -39,7 +39,7 @@ python3.8 -m pip install virtualenv
 
 # Шаг 4: Клонирование репозитория API
 echo "Клонирование репозитория API..."
-git clone -b dev https://github.com/hikkahost/api /root/api
+git clone -b main https://github.com/hikkahost/api /root/api
 cd /root/api
 
 # Шаг 5: Создание виртуального окружения и установка зависимостей
