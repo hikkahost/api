@@ -1,32 +1,93 @@
 import os
 import re
+import subprocess
+from typing import Optional
 from pathlib import Path
 
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
+AUTH_API_URL = os.environ.get("HIKKAHOST_AUTH_API_URL", "https://beta.api.hikka.host").rstrip("/")
+BASIC_AUTH_MARKER = "# BASIC_AUTH"
 CADDYFILE_TEMPLATE = """
 {fqdn} {{
     import ssl_dns
-    reverse_proxy {target_ip}:8080
-    basicauth {{
-        {username} "{hashed_password}"
+
+    @init_data {{
+        header X-Telegram-Init-Data *
+    }}
+
+    handle @init_data {{
+        forward_auth {auth_api_url} {{
+            uri /test
+            header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
+        }}
+        reverse_proxy {target_ip}:8080
+    }}
+
+    handle {{
+        {basic_auth_marker}
+        basicauth {{
+            {username} "{hashed_password}"
+        }}
+        reverse_proxy {target_ip}:8080
     }}
 }}
 """
 
+
+def _extract_existing_password(config: str, username: str) -> Optional[str]:
+    pattern = re.compile(
+        rf"basicauth\s*\{{\s*{re.escape(username)}\s+\"([^\"]+)\"",
+        re.MULTILINE,
+    )
+    match = pattern.search(config)
+    if not match:
+        return None
+    return match.group(1)
+
+
+def _extract_existing_target_ip(config: str) -> Optional[str]:
+    pattern = re.compile(r"reverse_proxy\s+([0-9.]+):8080", re.MULTILINE)
+    match = pattern.search(config)
+    if not match:
+        return None
+    return match.group(1)
+
 def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: str):
     fqdn = f"{username}.{server}.hikka.host"
-    target_ip = f"192.168.{ip_prefix}.101"
-
     config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
     if config_path.exists():
-        print(f"Configuration for {username}.{server} already exists.")
+        config = config_path.read_text()
+        if "forward_auth" in config or "@init_data" in config:
+            print(f"Configuration for {username}.{server} already exists.")
+            return
+        existing_password = _extract_existing_password(config, username)
+        target_ip = _extract_existing_target_ip(config)
+        if not existing_password or not target_ip:
+            print(
+                f"Configuration for {username}.{server} exists but could not be upgraded."
+            )
+            return
+        config = CADDYFILE_TEMPLATE.format(
+            fqdn=fqdn,
+            target_ip=target_ip,
+            username=username,
+            hashed_password=existing_password,
+            auth_api_url=AUTH_API_URL,
+            basic_auth_marker=BASIC_AUTH_MARKER,
+        )
+        config_path.write_text(config)
+        reload_caddy()
         return
+
+    target_ip = f"192.168.{ip_prefix}.101"
 
     config = CADDYFILE_TEMPLATE.format(
         fqdn=fqdn,
         target_ip=target_ip,
         username=username,
         hashed_password=hashed_password,
+        auth_api_url=AUTH_API_URL,
+        basic_auth_marker=BASIC_AUTH_MARKER,
     )
 
     os.makedirs(CADDY_CONFIG_PATH, exist_ok=True)
@@ -53,19 +114,39 @@ def update_password(username: str, server: str, hashed_password: str):
 
     config = config_path.read_text()
 
-    config = re.sub(r"(?m)^\s*basicauth\s*\{[^}]*\}\s*", "", config)
+    new_auth_block_handle = (
+        "        basicauth {\n"
+        f"            {username} \"{hashed_password}\"\n"
+        "        }\n"
+    )
+    new_auth_block_root = (
+        "    basicauth {\n"
+        f"        {username} \"{hashed_password}\"\n"
+        "    }\n"
+    )
 
-    pattern = re.compile(rf"({username}\.{server}\.hikka\.host\s*\{{)", re.MULTILINE)
-    new_auth_block = f"    basicauth {{\n        {username} \"{hashed_password}\"\n    }}\n"
-
-    def insert_auth_block(match):
-        return f"{match.group(1)}\n{new_auth_block}"
-
-    config = pattern.sub(insert_auth_block, config)
+    marker_pattern = re.compile(
+        rf"(?m)^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$"
+    )
+    if marker_pattern.search(config):
+        marker_replace = re.compile(
+            rf"(?ms)(^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$)(?:\n\s*basicauth\s*\{{[^}}]*\}}\s*)?"
+        )
+        config = marker_replace.sub(rf"\1\n{new_auth_block_handle}", config, count=1)
+    else:
+        config = re.sub(r"(?m)^\s*basicauth\s*\{[^}]*\}\s*", "", config)
+        pattern = re.compile(
+            rf"({username}\.{server}\.hikka\.host\s*\{{)", re.MULTILINE
+        )
+        config = pattern.sub(
+            lambda match: f"{match.group(1)}\n{new_auth_block_root}",
+            config,
+            count=1,
+        )
 
     config_path.write_text(config)
     reload_caddy()
 
 
 def reload_caddy():
-    os.system("systemctl restart caddy")
+    subprocess.run(["systemctl", "restart", "caddy"], check=False)
