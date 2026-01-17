@@ -10,6 +10,16 @@ services:
         limits:
           cpus: "${CPU_LIMIT:-1.0}"
           memory: "${MEMORY_LIMIT:-512M}"
+    pids_limit: ${PIDS_LIMIT:-256}
+    ulimits:
+      nofile:
+        soft: ${NOFILE_SOFT:-1024}
+        hard: ${NOFILE_HARD:-2048}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
     networks:
       hikka_net:
         ipv4_address: "${IP_PREFIX:-192.168.100}.101"
@@ -18,7 +28,9 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ./data:/data
+      - hikka_data:/data
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=${TMPFS_TMP_SIZE:-64M}
 
 volumes:
   hikka_data:
