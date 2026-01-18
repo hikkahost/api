@@ -144,6 +144,7 @@ def create(port, name, userbot="vsecoder/hikka:latest", password="$2b$12$nr213f0
     port = _parse_port(port)
     path = os.path.join(os.getcwd(), "volumes", name)
     os.mkdir(path)
+    os.mkdir(os.path.join(path, "data"))
     shutil.copy("./docker-compose.yml", path)
     ip_prefix = None
 
@@ -165,7 +166,6 @@ EXTERNAL_PORT={port}
 CPU_LIMIT={CONTAINER['cpu']}
 MEMORY_LIMIT={CONTAINER['memory']}
 IP_PREFIX={ip_prefix}
-TMPFS_SIZE={CONTAINER['size']}
 BRIDGE_NAME={bridge_name}
 """
 

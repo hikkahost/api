@@ -5,11 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "${EXTERNAL_PORT:-8080}:8080"
-    deploy:
-      resources:
-        limits:
-          cpus: "${CPU_LIMIT:-1.0}"
-          memory: "${MEMORY_LIMIT:-512M}"
+    cpus: "${CPU_LIMIT:-1.0}"
+    mem_limit: "${MEMORY_LIMIT:-512M}"
     pids_limit: ${PIDS_LIMIT:-256}
     ulimits:
       nofile:
@@ -28,17 +25,9 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - hikka_data:/data
+      - ./data:/data
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=${TMPFS_TMP_SIZE:-64M}
-
-volumes:
-  hikka_data:
-    driver: local
-    driver_opts:
-      type: tmpfs
-      device: tmpfs
-      o: size=${TMPFS_SIZE:-3G}
 
 networks:
   hikka_net:
