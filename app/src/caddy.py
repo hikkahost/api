@@ -33,7 +33,10 @@ CADDYFILE_TEMPLATE = """
             header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
             header_up -Authorization
         }}
-        reverse_proxy {target_ip}:8080
+        reverse_proxy {target_ip}:8080 {{
+            header_up -Authorization
+            header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
+        }}
     }}
 
     handle @tg_init_data_query {{
@@ -48,7 +51,10 @@ CADDYFILE_TEMPLATE = """
             header_up -Forwarded
             header_up X-Telegram-Init-Data {{http.request.uri.query.tgWebAppData}}
         }}
-        reverse_proxy {target_ip}:8080
+        reverse_proxy {target_ip}:8080 {{
+            header_up -Authorization
+            header_up X-Telegram-Init-Data {{http.request.uri.query.tgWebAppData}}
+        }}
     }}
 
     handle {{
@@ -81,6 +87,10 @@ def _extract_existing_target_ip(config: str) -> Optional[str]:
     return match.group(1)
 
 
+def _has_reverse_proxy_block(config: str) -> bool:
+    return bool(re.search(r"reverse_proxy\s+[^\\s]+\\s*\\{", config))
+
+
 def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: str):
     fqdn = f"{username}.{server}.hikka.host"
     config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
@@ -99,6 +109,7 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
             or "@tg_init_data_query" not in config
             or "header_up -Authorization" not in config
             or "log {" not in config
+            or not _has_reverse_proxy_block(config)
         )
         if "forward_auth" in config or "@init_data" in config:
             if not needs_upgrade:
