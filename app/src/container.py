@@ -147,16 +147,17 @@ def create(port, name, userbot="vsecoder/hikka:latest", password="$2b$12$nr213f0
     os.mkdir(os.path.join(path, "data"))
     shutil.copy("./docker-compose.yml", path)
     ip_prefix = None
+    ip_suffix = None
 
     for ip in range(1, 256):
         if check_ip(ip):
-            ip_prefix = ip
+            ip_suffix = ip
             break
 
-    if ip_prefix is None:
+    if ip_suffix is None:
         raise RuntimeError("No available IP prefix found for container network.")
 
-    ip_prefix = f"192.168.{ip_prefix}"
+    ip_prefix = f"192.168.{ip_suffix}"
     bridge_name = f"br-{name}"
 
     env = f"""
@@ -182,7 +183,7 @@ BRIDGE_NAME={bridge_name}
 
     _apply_network_limits(ip_prefix, bridge_name)
 
-    create_vhost(name, SERVER, ip_prefix, password)
+    create_vhost(name, SERVER, ip_suffix, password)
 
 
 def stop(name):

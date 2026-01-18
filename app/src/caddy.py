@@ -11,14 +11,26 @@ CADDYFILE_TEMPLATE = """
 {fqdn} {{
     import ssl_dns
 
-    @init_data {{
+    @init_data_header {{
         header X-Telegram-Init-Data *
     }}
 
-    handle @init_data {{
+    @init_data_query {{
+        query init_data *
+    }}
+
+    handle @init_data_header {{
         forward_auth {auth_api_url} {{
             uri /test
             header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
+        }}
+        reverse_proxy {target_ip}:8080
+    }}
+
+    handle @init_data_query {{
+        forward_auth {auth_api_url} {{
+            uri /test
+            header_up X-Telegram-Init-Data {{http.request.uri.query.init_data}}
         }}
         reverse_proxy {target_ip}:8080
     }}
@@ -57,9 +69,6 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
     config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
     if config_path.exists():
         config = config_path.read_text()
-        if "forward_auth" in config or "@init_data" in config:
-            print(f"Configuration for {username}.{server} already exists.")
-            return
         existing_password = _extract_existing_password(config, username)
         target_ip = _extract_existing_target_ip(config)
         if not existing_password or not target_ip:
@@ -67,6 +76,11 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
                 f"Configuration for {username}.{server} exists but could not be upgraded."
             )
             return
+        needs_upgrade = "query init_data" not in config and "@init_data_query" not in config
+        if "forward_auth" in config or "@init_data" in config:
+            if not needs_upgrade:
+                print(f"Configuration for {username}.{server} already exists.")
+                return
         config = CADDYFILE_TEMPLATE.format(
             fqdn=fqdn,
             target_ip=target_ip,
