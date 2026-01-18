@@ -5,32 +5,47 @@ from typing import Optional
 from pathlib import Path
 
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
-AUTH_API_URL = os.environ.get("HIKKAHOST_AUTH_API_URL", "https://beta.api.hikka.host").rstrip("/")
+AUTH_API_URL = os.environ.get(
+    "HIKKAHOST_AUTH_API_URL", "https://beta.api.hikka.host"
+).rstrip("/")
 BASIC_AUTH_MARKER = "# BASIC_AUTH"
 CADDYFILE_TEMPLATE = """
 {fqdn} {{
     import ssl_dns
 
+    log {{
+        output file /root/api/volumes/{username}/caddy.log
+        format json
+    }}
+
     @init_data_header {{
         header X-Telegram-Init-Data *
     }}
 
-    @init_data_query {{
-        query init_data=*
+    @tg_init_data_query {{
+        query tgWebAppData=*
     }}
 
     handle @init_data_header {{
         forward_auth {auth_api_url} {{
             uri /test
             header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
+            header_up -Authorization
         }}
         reverse_proxy {target_ip}:8080
     }}
 
-    handle @init_data_query {{
+    handle @tg_init_data_query {{
         forward_auth {auth_api_url} {{
             uri /test
-            header_up X-Telegram-Init-Data {{http.request.uri.query.init_data}}
+            header_up -Authorization
+            header_up -X-Forwarded-Uri
+            header_up -X-Forwarded-Method
+            header_up -X-Forwarded-Host
+            header_up -X-Forwarded-Proto
+            header_up -X-Forwarded-For
+            header_up -Forwarded
+            header_up X-Telegram-Init-Data {{http.request.uri.query.tgWebAppData}}
         }}
         reverse_proxy {target_ip}:8080
     }}
@@ -64,6 +79,7 @@ def _extract_existing_target_ip(config: str) -> Optional[str]:
         return None
     return match.group(1)
 
+
 def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: str):
     fqdn = f"{username}.{server}.hikka.host"
     config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
@@ -76,7 +92,13 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
                 f"Configuration for {username}.{server} exists but could not be upgraded."
             )
             return
-        needs_upgrade = "query init_data" not in config and "@init_data_query" not in config
+        needs_upgrade = (
+            "query init_data=*" not in config
+            or "@init_data_query" not in config
+            or "@tg_init_data_query" not in config
+            or "header_up -Authorization" not in config
+            or "hikka-auth.log" not in config
+        )
         if "forward_auth" in config or "@init_data" in config:
             if not needs_upgrade:
                 print(f"Configuration for {username}.{server} already exists.")
@@ -130,18 +152,14 @@ def update_password(username: str, server: str, hashed_password: str):
 
     new_auth_block_handle = (
         "        basicauth {\n"
-        f"            {username} \"{hashed_password}\"\n"
+        f'            {username} "{hashed_password}"\n'
         "        }\n"
     )
     new_auth_block_root = (
-        "    basicauth {\n"
-        f"        {username} \"{hashed_password}\"\n"
-        "    }\n"
+        "    basicauth {\n" f'        {username} "{hashed_password}"\n' "    }\n"
     )
 
-    marker_pattern = re.compile(
-        rf"(?m)^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$"
-    )
+    marker_pattern = re.compile(rf"(?m)^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$")
     if marker_pattern.search(config):
         marker_replace = re.compile(
             rf"(?ms)(^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$)(?:\n\s*basicauth\s*\{{[^}}]*\}}\s*)?"
