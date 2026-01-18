@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 from typing import Optional
+from urllib.parse import urlparse
 from pathlib import Path
 
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
@@ -9,6 +10,7 @@ CADDY_LOG_DIR = "/var/log/caddy"
 AUTH_API_URL = os.environ.get(
     "HIKKAHOST_AUTH_API_URL", "https://beta.api.hikka.host"
 ).rstrip("/")
+AUTH_API_HOST = urlparse(AUTH_API_URL).netloc or AUTH_API_URL
 BASIC_AUTH_MARKER = "# BASIC_AUTH"
 CADDYFILE_TEMPLATE = """
 {fqdn} {{
@@ -27,21 +29,32 @@ CADDYFILE_TEMPLATE = """
         query tgWebAppData=*
     }}
 
+    @tg_init_data_cookie {{
+        header Cookie *tg_init_data=*
+    }}
+
+    @static_assets {{
+        path *.css *.js *.map *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.eot
+    }}
+
     handle @init_data_header {{
         forward_auth {auth_api_url} {{
             uri /test
+            header_up Host {auth_api_host}
             header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
             header_up -Authorization
         }}
         reverse_proxy {target_ip}:8080 {{
             header_up -Authorization
             header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
+            header_down Set-Cookie "tg_init_data={{http.request.header.X-Telegram-Init-Data}}; Path=/; Secure; SameSite=None; HttpOnly"
         }}
     }}
 
     handle @tg_init_data_query {{
         forward_auth {auth_api_url} {{
             uri /test
+            header_up Host {auth_api_host}
             header_up -Authorization
             header_up -X-Forwarded-Uri
             header_up -X-Forwarded-Method
@@ -54,7 +67,25 @@ CADDYFILE_TEMPLATE = """
         reverse_proxy {target_ip}:8080 {{
             header_up -Authorization
             header_up X-Telegram-Init-Data {{http.request.uri.query.tgWebAppData}}
+            header_down Set-Cookie "tg_init_data={{http.request.uri.query.tgWebAppData}}; Path=/; Secure; SameSite=None; HttpOnly"
         }}
+    }}
+
+    handle @tg_init_data_cookie {{
+        forward_auth {auth_api_url} {{
+            uri /test
+            header_up Host {auth_api_host}
+            header_up X-Telegram-Init-Data {{http.request.cookie.tg_init_data}}
+            header_up -Authorization
+        }}
+        reverse_proxy {target_ip}:8080 {{
+            header_up -Authorization
+            header_up X-Telegram-Init-Data {{http.request.cookie.tg_init_data}}
+        }}
+    }}
+
+    handle @static_assets {{
+        reverse_proxy {target_ip}:8080
     }}
 
     handle {{
@@ -108,8 +139,11 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
             or "@init_data_query" not in config
             or "@tg_init_data_query" not in config
             or "header_up -Authorization" not in config
+            or "header_up Host" not in config
             or "log {" not in config
             or not _has_reverse_proxy_block(config)
+            or "@static_assets" not in config
+            or "@tg_init_data_cookie" not in config
         )
         if "forward_auth" in config or "@init_data" in config:
             if not needs_upgrade:
@@ -122,6 +156,7 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
             username=username,
             hashed_password=existing_password,
             auth_api_url=AUTH_API_URL,
+            auth_api_host=AUTH_API_HOST,
             basic_auth_marker=BASIC_AUTH_MARKER,
             log_dir=CADDY_LOG_DIR,
         )
@@ -138,6 +173,7 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
         username=username,
         hashed_password=hashed_password,
         auth_api_url=AUTH_API_URL,
+        auth_api_host=AUTH_API_HOST,
         basic_auth_marker=BASIC_AUTH_MARKER,
         log_dir=CADDY_LOG_DIR,
     )
