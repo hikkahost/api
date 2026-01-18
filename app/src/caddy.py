@@ -16,7 +16,7 @@ CADDYFILE_TEMPLATE = """
     }}
 
     @init_data_query {{
-        query init_data *
+        query init_data=*
     }}
 
     handle @init_data_header {{
