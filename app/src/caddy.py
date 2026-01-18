@@ -5,6 +5,7 @@ from typing import Optional
 from pathlib import Path
 
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
+CADDY_LOG_DIR = "/var/log/caddy"
 AUTH_API_URL = os.environ.get(
     "HIKKAHOST_AUTH_API_URL", "https://beta.api.hikka.host"
 ).rstrip("/")
@@ -14,7 +15,7 @@ CADDYFILE_TEMPLATE = """
     import ssl_dns
 
     log {{
-        output file /root/api/volumes/{username}/caddy.log
+        output file {log_dir}/hikka-{username}.log
         format json
     }}
 
@@ -97,12 +98,13 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
             or "@init_data_query" not in config
             or "@tg_init_data_query" not in config
             or "header_up -Authorization" not in config
-            or "hikka-auth.log" not in config
+            or "log {" not in config
         )
         if "forward_auth" in config or "@init_data" in config:
             if not needs_upgrade:
                 print(f"Configuration for {username}.{server} already exists.")
                 return
+        os.makedirs(CADDY_LOG_DIR, exist_ok=True)
         config = CADDYFILE_TEMPLATE.format(
             fqdn=fqdn,
             target_ip=target_ip,
@@ -110,6 +112,7 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
             hashed_password=existing_password,
             auth_api_url=AUTH_API_URL,
             basic_auth_marker=BASIC_AUTH_MARKER,
+            log_dir=CADDY_LOG_DIR,
         )
         config_path.write_text(config)
         reload_caddy()
@@ -117,6 +120,7 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
 
     target_ip = f"192.168.{ip_prefix}.101"
 
+    os.makedirs(CADDY_LOG_DIR, exist_ok=True)
     config = CADDYFILE_TEMPLATE.format(
         fqdn=fqdn,
         target_ip=target_ip,
@@ -124,6 +128,7 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
         hashed_password=hashed_password,
         auth_api_url=AUTH_API_URL,
         basic_auth_marker=BASIC_AUTH_MARKER,
+        log_dir=CADDY_LOG_DIR,
     )
 
     os.makedirs(CADDY_CONFIG_PATH, exist_ok=True)
