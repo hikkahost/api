@@ -66,7 +66,7 @@ cat <<EOL > /root/api/app/config.py
 CONTAINER = {
     "cpu": 1.0,
     "memory": "512M",
-    "size": "3g",
+    "size": "5g",
     "rate": "50mbit",
     "burst": "32kbit",
     "latency": "400ms",
@@ -91,7 +91,7 @@ cat <<EOL > /root/api/app/config.py
 CONTAINER = {
     "cpu": 1.0,
     "memory": "512M",
-    "size": "3g",
+    "size": "5g",
     "rate": "50mbit",
     "burst": "32kbit",
     "latency": "400ms",
