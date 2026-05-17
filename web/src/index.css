@@ -310,7 +310,7 @@
     letter-spacing: 0.05em;
     padding: 0;
     margin: 0;
-    transform: translateY(0.05em);
+    transform: translateY(0.1em);
   }
 
   .badge-userbot .badge-label {
