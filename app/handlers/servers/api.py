@@ -6,11 +6,11 @@ from app.utils.task_queue import queue_service, TaskType, TaskStatus
 from app.utils.decorators.auth import protect
 from app.src.container import (
     containers_list,
+    get_container_snapshot,
     get_number_of_containers,
     logs,
-    stats,
-    inspect,
 )
+from app.utils.password_hash import validate_password_hash
 from app.utils.resources import get_server_resources
 
 api = Blueprint("event", url_prefix="/host")
@@ -83,7 +83,9 @@ async def create_api(request):
         port = _get_required_arg(request, "port")
         name = _get_required_arg(request, "name")
         userbot = _get_optional_arg(request, "userbot", DEFAULT_USERBOT)
-        password = _get_optional_arg(request, "password", DEFAULT_PASSWORD)
+        password = validate_password_hash(
+            _get_optional_arg(request, "password", DEFAULT_PASSWORD)
+        )
 
         task_id = await queue_service.add_task(
             TaskType.CREATE,
@@ -171,9 +173,31 @@ async def logs_api(request):
     """
     try:
         name = _get_required_arg(request, "name")
-        return json({"logs": await _run_blocking(logs, name)})
-    except Exception as e:
+        snapshot = await _run_blocking(get_container_snapshot, name)
+        if snapshot["state"] == "not_found":
+            return json(
+                {
+                    "state": "not_found",
+                    "logs": "",
+                }
+            )
+        if snapshot["state"] == "provisioning":
+            return json(
+                {
+                    "state": "provisioning",
+                    "logs": "",
+                }
+            )
+        return json(
+            {
+                "state": snapshot["state"],
+                "logs": await _run_blocking(logs, name),
+            }
+        )
+    except ValueError as e:
         return json({"error": str(e)}, status=400)
+    except Exception as e:
+        return json({"error": str(e)}, status=500)
 
 
 @api.route("/exec", methods=["GET"])
@@ -221,11 +245,19 @@ async def stats_api(request):
     """
     try:
         name = _get_required_arg(request, "name")
-        stats_result = await _run_blocking(stats, name)
-        inspect_result = await _run_blocking(inspect, name)
-        return json({"stats": stats_result, "inspect": inspect_result})
-    except Exception as e:
+        snapshot = await _run_blocking(get_container_snapshot, name)
+        return json(
+            {
+                "state": snapshot["state"],
+                "docker_status": snapshot["docker_status"],
+                "stats": snapshot["stats"],
+                "inspect": snapshot["inspect"],
+            }
+        )
+    except ValueError as e:
         return json({"error": str(e)}, status=400)
+    except Exception as e:
+        return json({"error": str(e)}, status=500)
 
 
 @api.route("/status", methods=["GET"])
@@ -244,11 +276,17 @@ async def status_api(request):
     """
     try:
         name = _get_required_arg(request, "name")
-        if await _run_blocking(stats, name) is None:
-            return json({"status": "stopped"})
-        return json({"status": "running"})
-    except Exception as e:
+        snapshot = await _run_blocking(get_container_snapshot, name)
+        return json(
+            {
+                "status": snapshot["state"],
+                "docker_status": snapshot["docker_status"],
+            }
+        )
+    except ValueError as e:
         return json({"error": str(e)}, status=400)
+    except Exception as e:
+        return json({"error": str(e)}, status=500)
 
 
 @api.route("/resources", methods=["GET"])
@@ -306,7 +344,7 @@ async def update_password_api(request):
     """
     try:
         name = _get_required_arg(request, "name")
-        password = _get_required_arg(request, "password")
+        password = validate_password_hash(_get_required_arg(request, "password"))
         task_id = await queue_service.add_task(
             TaskType.UPDATE_PASSWORD, {"name": name, "password": password}
         )

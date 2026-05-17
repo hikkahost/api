@@ -22,9 +22,14 @@ def mock_container_ops(monkeypatch):
         lambda *args, **kwargs: {"exit_code": 0, "output": "ok"},
     )
     monkeypatch.setattr("app.src.container.logs", lambda *args, **kwargs: "log")
-    monkeypatch.setattr("app.src.container.stats", lambda *args, **kwargs: {"cpu": 1})
     monkeypatch.setattr(
-        "app.src.container.inspect", lambda *args, **kwargs: {"id": "x"}
+        "app.src.container.get_container_snapshot",
+        lambda *args, **kwargs: {
+            "state": "running",
+            "docker_status": "running",
+            "stats": {"cpu": 1},
+            "inspect": {"id": "x"},
+        },
     )
     monkeypatch.setattr(
         "app.src.container.containers_list", lambda *args, **kwargs: [{"name": "test"}]
@@ -165,6 +170,7 @@ async def test_container_stats(app):
         "/api/host/stats", params=params, headers={"Authorization": "secret"}
     )
     assert response.status == 200
+    assert response.json["state"] == "running"
     assert "stats" in response.json
     assert "inspect" in response.json
 
@@ -176,7 +182,12 @@ async def test_container_status(app):
     )
     assert response.status == 200
     assert "status" in response.json
-    assert response.json["status"] in ["running", "stopped"]
+    assert response.json["status"] in [
+        "running",
+        "stopped",
+        "provisioning",
+        "not_found",
+    ]
 
 
 async def test_server_resources(app):
@@ -209,7 +220,9 @@ async def test_remove_container(app):
 
 
 async def test_update_password(app):
-    params = {"name": "test", "password": "hash"}
+    from app.handlers.servers.api import DEFAULT_PASSWORD
+
+    params = {"name": "test", "password": DEFAULT_PASSWORD}
     request, response = await app.asgi_client.get(
         "/api/host/update-password", params=params, headers={"Authorization": "secret"}
     )
@@ -217,6 +230,15 @@ async def test_update_password(app):
     task = await _wait_for_task(app, response.json["task_id"])
     assert task["status"] == TaskStatus.COMPLETED
     assert "update" in task["result"]
+
+
+async def test_update_password_rejects_invalid_hash(app):
+    params = {"name": "test", "password": "hash"}
+    request, response = await app.asgi_client.get(
+        "/api/host/update-password", params=params, headers={"Authorization": "secret"}
+    )
+    assert response.status == 400
+    assert response.json["error"] == "Invalid password hash"
 
 
 async def test_task_not_found(app):
