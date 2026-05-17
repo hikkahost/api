@@ -33,3 +33,6 @@ twisted
 pydantic==1.10.14
 protobuf==3.20.3
 bcrypt
+telethon>=1.34.0
+qrcode[pil]>=7.4.2
+Pillow>=10.0.0

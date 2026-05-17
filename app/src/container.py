@@ -9,7 +9,6 @@ from python_on_whales import DockerClient
 from app.config import CONTAINER, SERVER
 from app.src.caddy import create_vhost, remove_caddy_user
 
-
 client = docker.from_env()
 _VALID_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$")
 _MAX_BRIDGE_NAME_LEN = 15
@@ -103,9 +102,7 @@ def _apply_network_limits(ip_prefix: str, bridge_name: str) -> None:
     )
 
 
-def _clear_network_limits(
-    ip_prefix: Optional[str], bridge_name: Optional[str]
-) -> None:
+def _clear_network_limits(ip_prefix: Optional[str], bridge_name: Optional[str]) -> None:
     source_ip = _build_container_ip(ip_prefix)
     if source_ip:
         _run_command(
@@ -134,12 +131,17 @@ def check_ip(ip_prefix: int) -> bool:
     for network in networks:
         if not network.ipam.config:
             continue
-        if network.ipam.config[0]['Subnet'] == f'192.168.{ip_prefix}.0/24':
+        if network.ipam.config[0]["Subnet"] == f"192.168.{ip_prefix}.0/24":
             return False
     return True
 
 
-def create(port, name, userbot="vsecoder/hikka:latest", password="$2b$12$nr213f0pJnQuCAdLnRTMeODqoniH1YH.Aqp6x2a9Wam01FtLdCB7O"):
+def create(
+    port,
+    name,
+    userbot="vsecoder/hikka:latest",
+    password="$2b$12$nr213f0pJnQuCAdLnRTMeODqoniH1YH.Aqp6x2a9Wam01FtLdCB7O",
+):
     _validate_container_name(name)
     port = _parse_port(port)
     path = os.path.join(os.getcwd(), "volumes", name)
@@ -232,8 +234,18 @@ def logs(name):
 
 def execute(name, command):
     _validate_container_name(name)
-    exec = client.containers.get(name).exec_run(f"bash -c '{command}'")
-    return {"exit_code": exec[0], "output": exec[1].decode("utf-8")}
+    if not isinstance(command, str) or not command.strip():
+        raise ValueError("Command is required")
+    if "\x00" in command:
+        raise ValueError("Invalid command")
+    container = client.containers.get(name)
+    exec_result = container.exec_run(cmd=["bash", "-c", command])
+    output = exec_result.output
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", errors="replace")
+    elif output is None:
+        output = ""
+    return {"exit_code": exec_result.exit_code, "output": output}
 
 
 def stats(name):

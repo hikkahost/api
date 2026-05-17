@@ -1,16 +1,17 @@
 import docker
 
 from pathlib import Path
-from app.config import SERVER
-from app.src.caddy import create_vhost
 
+from app.config import SERVER
+from app.src.caddy import create_vhost, read_vhost_password
 
 client = docker.from_env()
 
+DEFAULT_PASSWORD = "$2b$12$nr213f0pJnQuCAdLnRTMeODqoniH1YH.Aqp6x2a9Wam01FtLdCB7O"
+
 
 def containers_list():
-    containers = client.containers.list(all=True)
-    return containers
+    return client.containers.list(all=True)
 
 
 for container in containers_list():
@@ -27,12 +28,16 @@ for container in containers_list():
         env_dict[key.strip()] = value.strip()
 
     if not container.name.isdigit():
-        print(f"Container name {container.name} is not a digit, skipping vhost creation.")
+        print(
+            f"Container name {container.name} is not a digit, skipping vhost creation."
+        )
         continue
+
+    hashed_password = read_vhost_password(container.name, SERVER) or DEFAULT_PASSWORD
 
     create_vhost(
         username=container.name,
         server=SERVER,
         ip_prefix=int(env_dict["IP_PREFIX"].split(".")[2]),
-        hashed_password="$2b$12$nr213f0pJnQuCAdLnRTMeODqoniH1YH.Aqp6x2a9Wam01FtLdCB7O",
+        hashed_password=hashed_password,
     )

@@ -48,6 +48,7 @@ def _task_response(task_id: str):
 
 
 @api.route("/ping", methods=["GET"])
+@protect
 async def ping(request):
     return json({"message": "pong"})
 
@@ -251,6 +252,7 @@ async def status_api(request):
 
 
 @api.route("/resources", methods=["GET"])
+@protect
 async def resources_api(request):
     """
     Get resources of a server

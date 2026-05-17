@@ -18,7 +18,6 @@ from app.src.container import (
     remove,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -153,6 +152,23 @@ class QueueService:
             )
             return {"update": result}
         raise ValueError("Unknown task type")
+
+    def reset_for_tests(self) -> None:
+        """Clear worker state between tests (no cancel — the loop may already be closed)."""
+        self._worker_task = None
+        self._queue = None
+        self._tasks.clear()
+
+    async def shutdown_worker(self) -> None:
+        """Shut down the worker cleanly while the event loop is still running."""
+        if self._worker_task and not self._worker_task.done():
+            self._worker_task.cancel()
+            try:
+                await self._worker_task
+            except asyncio.CancelledError:
+                pass
+        self._worker_task = None
+        self._queue = None
 
 
 queue_service = QueueService()

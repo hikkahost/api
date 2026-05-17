@@ -4,8 +4,6 @@ services:
     container_name: "${CONTAINER_NAME:-hikka_worker}"
     init: true
     restart: unless-stopped
-    ports:
-      - "${EXTERNAL_PORT:-8080}:8080"
     cpus: "${CPU_LIMIT:-1.0}"
     mem_limit: "${MEMORY_LIMIT:-512M}"
     pids_limit: ${PIDS_LIMIT:-256}

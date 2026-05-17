@@ -1,107 +1,70 @@
 import os
 import re
 import subprocess
+from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
-from pathlib import Path
 
 CADDY_CONFIG_PATH = "/etc/caddy/conf.d"
 CADDY_LOG_DIR = "/var/log/caddy"
-AUTH_API_URL = os.environ.get(
-    "HIKKAHOST_AUTH_API_URL", "https://beta.api.hikka.host"
-).rstrip("/")
-AUTH_API_HOST = urlparse(AUTH_API_URL).netloc or AUTH_API_URL
 BASIC_AUTH_MARKER = "# BASIC_AUTH"
+SETUP_WEB_UPSTREAM = "127.0.0.1:8001"
+
 CADDYFILE_TEMPLATE = """
 {fqdn} {{
-    import ssl_dns
+    tls /etc/ssl/cloudflare-origin.crt /etc/ssl/cloudflare-origin.key
+
+    header {{
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' data:; connect-src 'self'"
+    }}
 
     log {{
         output file {log_dir}/hikka-{username}.log
         format json
     }}
 
-    @init_data_header {{
-        header X-Telegram-Init-Data *
+    @sensitive {{
+        path *.session
+        path *.lock
+        path /config.json
+        path_regexp per_user_config `config-[0-9]+\\.json$`
+        path /.env
     }}
-
-    @tg_init_data_query {{
-        query tgWebAppData=*
-    }}
-
-    @tg_init_data_cookie {{
-        header Cookie *tg_init_data=*
-    }}
-
-    @static_assets {{
-        path *.css *.js *.map *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.eot
-    }}
-
-    handle @init_data_header {{
-        forward_auth {auth_api_url} {{
-            uri /test
-            header_up Host {auth_api_host}
-            header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
-            header_up -Authorization
-        }}
-        reverse_proxy {target_ip}:8080 {{
-            header_up -Authorization
-            header_up X-Telegram-Init-Data {{http.request.header.X-Telegram-Init-Data}}
-            header_down Set-Cookie "tg_init_data={{http.request.header.X-Telegram-Init-Data}}; Path=/; Secure; SameSite=None; HttpOnly"
-        }}
-    }}
-
-    handle @tg_init_data_query {{
-        forward_auth {auth_api_url} {{
-            uri /test
-            header_up Host {auth_api_host}
-            header_up -Authorization
-            header_up -X-Forwarded-Uri
-            header_up -X-Forwarded-Method
-            header_up -X-Forwarded-Host
-            header_up -X-Forwarded-Proto
-            header_up -X-Forwarded-For
-            header_up -Forwarded
-            header_up X-Telegram-Init-Data {{http.request.uri.query.tgWebAppData}}
-        }}
-        reverse_proxy {target_ip}:8080 {{
-            header_up -Authorization
-            header_up X-Telegram-Init-Data {{http.request.uri.query.tgWebAppData}}
-            header_down Set-Cookie "tg_init_data={{http.request.uri.query.tgWebAppData}}; Path=/; Secure; SameSite=None; HttpOnly"
-        }}
-    }}
-
-    handle @tg_init_data_cookie {{
-        forward_auth {auth_api_url} {{
-            uri /test
-            header_up Host {auth_api_host}
-            header_up X-Telegram-Init-Data {{http.request.cookie.tg_init_data}}
-            header_up -Authorization
-        }}
-        reverse_proxy {target_ip}:8080 {{
-            header_up -Authorization
-            header_up X-Telegram-Init-Data {{http.request.cookie.tg_init_data}}
-        }}
-    }}
-
-    handle @static_assets {{
-        reverse_proxy {target_ip}:8080
-    }}
+    respond @sensitive 404
 
     handle {{
         {basic_auth_marker}
-        basicauth {{
+        basic_auth {{
             {username} "{hashed_password}"
         }}
-        reverse_proxy {target_ip}:8080
+        reverse_proxy {setup_upstream} {{
+            header_up X-Hikkahost-Container {username}
+            header_up X-Real-IP {{remote_host}}
+            header_up X-Forwarded-For {{remote_host}}
+            header_up X-Forwarded-Proto {{scheme}}
+            header_up Host {{host}}
+            header_up -Authorization
+        }}
     }}
 }}
 """
 
 
+def read_vhost_password(username: str, server: str) -> Optional[str]:
+    config_path = Path(CADDY_CONFIG_PATH) / f"{username}.{server}.caddy"
+    if not config_path.exists():
+        return None
+    return _extract_existing_password(config_path.read_text(), username)
+
+
 def _extract_existing_password(config: str, username: str) -> Optional[str]:
     pattern = re.compile(
-        rf"basicauth\s*\{{\s*{re.escape(username)}\s+\"([^\"]+)\"",
+        rf"basic_?auth\s*\{{\s*{re.escape(username)}\s+\"([^\"]+)\"",
         re.MULTILINE,
     )
     match = pattern.search(config)
@@ -110,16 +73,20 @@ def _extract_existing_password(config: str, username: str) -> Optional[str]:
     return match.group(1)
 
 
-def _extract_existing_target_ip(config: str) -> Optional[str]:
-    pattern = re.compile(r"reverse_proxy\s+([0-9.]+):8080", re.MULTILINE)
-    match = pattern.search(config)
-    if not match:
-        return None
-    return match.group(1)
-
-
-def _has_reverse_proxy_block(config: str) -> bool:
-    return bool(re.search(r"reverse_proxy\s+[^\\s]+\\s*\\{", config))
+def _render_vhost(
+    fqdn: str,
+    username: str,
+    hashed_password: str,
+) -> str:
+    os.makedirs(CADDY_LOG_DIR, exist_ok=True)
+    return CADDYFILE_TEMPLATE.format(
+        fqdn=fqdn,
+        username=username,
+        hashed_password=hashed_password,
+        basic_auth_marker=BASIC_AUTH_MARKER,
+        log_dir=CADDY_LOG_DIR,
+        setup_upstream=SETUP_WEB_UPSTREAM,
+    )
 
 
 def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: str):
@@ -128,59 +95,33 @@ def create_vhost(username: str, server: str, ip_prefix: int, hashed_password: st
     if config_path.exists():
         config = config_path.read_text()
         existing_password = _extract_existing_password(config, username)
-        target_ip = _extract_existing_target_ip(config)
-        if not existing_password or not target_ip:
+        if not existing_password:
             print(
                 f"Configuration for {username}.{server} exists but could not be upgraded."
             )
             return
         needs_upgrade = (
-            "query init_data=*" not in config
-            or "@init_data_query" not in config
-            or "@tg_init_data_query" not in config
-            or "header_up -Authorization" not in config
-            or "header_up Host" not in config
-            or "log {" not in config
-            or not _has_reverse_proxy_block(config)
-            or "@static_assets" not in config
-            or "@tg_init_data_cookie" not in config
+            SETUP_WEB_UPSTREAM not in config
+            or ":8080" in config
+            or "forward_auth" in config
+            or "rate_limit" in config
+            or "import ssl_dns" in config
+            or "basicauth" in config
+            or "/etc/ssl/cloudflare-origin.crt" not in config
+            or "Strict-Transport-Security" not in config
+            or "@sensitive" not in config
         )
-        if "forward_auth" in config or "@init_data" in config:
-            if not needs_upgrade:
-                print(f"Configuration for {username}.{server} already exists.")
-                return
-        os.makedirs(CADDY_LOG_DIR, exist_ok=True)
-        config = CADDYFILE_TEMPLATE.format(
-            fqdn=fqdn,
-            target_ip=target_ip,
-            username=username,
-            hashed_password=existing_password,
-            auth_api_url=AUTH_API_URL,
-            auth_api_host=AUTH_API_HOST,
-            basic_auth_marker=BASIC_AUTH_MARKER,
-            log_dir=CADDY_LOG_DIR,
-        )
+        if not needs_upgrade:
+            print(f"Configuration for {username}.{server} already exists.")
+            return
+        config = _render_vhost(fqdn, username, existing_password)
         config_path.write_text(config)
         reload_caddy()
         return
 
-    target_ip = f"192.168.{ip_prefix}.101"
-
-    os.makedirs(CADDY_LOG_DIR, exist_ok=True)
-    config = CADDYFILE_TEMPLATE.format(
-        fqdn=fqdn,
-        target_ip=target_ip,
-        username=username,
-        hashed_password=hashed_password,
-        auth_api_url=AUTH_API_URL,
-        auth_api_host=AUTH_API_HOST,
-        basic_auth_marker=BASIC_AUTH_MARKER,
-        log_dir=CADDY_LOG_DIR,
-    )
-
+    config = _render_vhost(fqdn, username, hashed_password)
     os.makedirs(CADDY_CONFIG_PATH, exist_ok=True)
     config_path.write_text(config)
-
     reload_caddy()
 
 
@@ -203,22 +144,22 @@ def update_password(username: str, server: str, hashed_password: str):
     config = config_path.read_text()
 
     new_auth_block_handle = (
-        "        basicauth {\n"
+        "        basic_auth {\n"
         f'            {username} "{hashed_password}"\n'
         "        }\n"
     )
     new_auth_block_root = (
-        "    basicauth {\n" f'        {username} "{hashed_password}"\n' "    }\n"
+        "    basic_auth {\n" f'        {username} "{hashed_password}"\n' "    }\n"
     )
 
     marker_pattern = re.compile(rf"(?m)^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$")
     if marker_pattern.search(config):
         marker_replace = re.compile(
-            rf"(?ms)(^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$)(?:\n\s*basicauth\s*\{{[^}}]*\}}\s*)?"
+            rf"(?ms)(^\s*{re.escape(BASIC_AUTH_MARKER)}\s*$)(?:\n\s*basic_?auth\s*\{{[^}}]*\}}\s*)?"
         )
         config = marker_replace.sub(rf"\1\n{new_auth_block_handle}", config, count=1)
     else:
-        config = re.sub(r"(?m)^\s*basicauth\s*\{[^}]*\}\s*", "", config)
+        config = re.sub(r"(?m)^\s*basic_?auth\s*\{[^}]*\}\s*", "", config)
         pattern = re.compile(
             rf"({username}\.{server}\.hikka\.host\s*\{{)", re.MULTILINE
         )
@@ -233,4 +174,7 @@ def update_password(username: str, server: str, hashed_password: str):
 
 
 def reload_caddy():
-    subprocess.run(["systemctl", "restart", "caddy"], check=False)
+    if subprocess.run(["systemctl", "is-active", "--quiet", "caddy"]).returncode == 0:
+        subprocess.run(["systemctl", "reload", "caddy"], check=False)
+    else:
+        subprocess.run(["systemctl", "start", "caddy"], check=False)
