@@ -15,7 +15,8 @@
     "setup": "Setup",
     "beta": "Beta",
     "betaHint": "This setup wizard is in beta — features may change.",
-    "controlBot": "Main control is in"
+    "controlBot": "Main control is in",
+    "supportHint": "for questions, contact"
   },
   "steps": {
     "accounts": "Accounts",
