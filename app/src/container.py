@@ -546,7 +546,43 @@ def execute(name, command):
     return {"exit_code": exec_result.exit_code, "output": output}
 
 
+def _empty_docker_stats(memory_limit: int = 0) -> Dict[str, Any]:
+    return {
+        "cpu_stats": {
+            "cpu_usage": {"total_usage": 0},
+            "system_cpu_usage": 0,
+            "online_cpus": 1,
+        },
+        "precpu_stats": {
+            "cpu_usage": {"total_usage": 0},
+            "system_cpu_usage": 0,
+        },
+        "memory_stats": {
+            "usage": 0,
+            "limit": memory_limit,
+            "max_usage": 0,
+        },
+    }
+
+
+def _memory_limit_from_container(container) -> int:
+    try:
+        limit = (container.attrs or {}).get("HostConfig", {}).get("Memory") or 0
+        return max(int(limit), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _apply_zero_stats(snapshot: Dict[str, Any], memory_limit: int = 0) -> None:
+    snapshot["stats"] = _empty_docker_stats(memory_limit)
+
+
 def _read_container_stats(container) -> Optional[Dict[str, Any]]:
+    try:
+        container.reload()
+    except APIError as exc:
+        logger.warning("container.reload before stats failed: %s", exc)
+
     last_error: Optional[Exception] = None
     for attempt in range(1, _STATS_RETRY_ATTEMPTS + 1):
         try:
@@ -561,6 +597,16 @@ def _read_container_stats(container) -> Optional[Dict[str, Any]]:
             )
             if attempt < _STATS_RETRY_ATTEMPTS:
                 time.sleep(_STATS_RETRY_DELAY_SEC * attempt)
+
+    try:
+        return client.api.get(
+            f"/containers/{container.id}/stats",
+            params={"stream": "false"},
+        )
+    except Exception as exc:
+        last_error = exc
+        logger.warning("container stats API fallback failed: %s", exc)
+
     if last_error is not None:
         logger.warning("Giving up on container.stats: %s", last_error)
     return None
@@ -582,14 +628,17 @@ def get_container_snapshot(name: str) -> Dict[str, Any]:
         except NotFound:
             if path.exists():
                 snapshot["state"] = "provisioning"
+                snapshot["docker_status"] = "provisioning"
             return snapshot
         except APIError as exc:
             logger.warning("Docker lookup failed for %s: %s", name, exc)
             if path.exists():
                 snapshot["state"] = "provisioning"
+                snapshot["docker_status"] = "provisioning"
             return snapshot
 
         snapshot["docker_status"] = container.status
+        mem_limit = _memory_limit_from_container(container)
 
         try:
             snapshot["inspect"] = container.attrs
@@ -598,10 +647,15 @@ def get_container_snapshot(name: str) -> Dict[str, Any]:
 
         if container.status != "running":
             snapshot["state"] = "stopped"
+            _apply_zero_stats(snapshot, mem_limit)
             return snapshot
 
         snapshot["state"] = "running"
-        snapshot["stats"] = _read_container_stats(container)
+        stats_data = _read_container_stats(container)
+        if stats_data is None:
+            _apply_zero_stats(snapshot, mem_limit)
+        else:
+            snapshot["stats"] = stats_data
         return snapshot
 
 

@@ -137,13 +137,17 @@ def test_snapshot_provisioning_when_volume_exists(workdir, monkeypatch):
         MagicMock(side_effect=docker.errors.NotFound("pending")),
     )
     snap = container_mod.get_container_snapshot("pending")
+    assert snap["docker_status"] == "provisioning"
     assert snap["state"] == "provisioning"
     assert snap["stats"] is None
 
 
 def test_snapshot_running_includes_stats(workdir, monkeypatch):
-    container = MagicMock(status="running", attrs={"Id": "abc"})
-    container.stats.return_value = {"cpu_stats": {}}
+    container = MagicMock(
+        status="running",
+        attrs={"Id": "abc", "HostConfig": {"Memory": 536870912}},
+    )
+    container.stats.return_value = {"cpu_stats": {"online_cpus": 1}}
     monkeypatch.setattr(
         container_mod.client.containers,
         "get",
@@ -152,12 +156,36 @@ def test_snapshot_running_includes_stats(workdir, monkeypatch):
 
     snap = container_mod.get_container_snapshot("user1")
     assert snap["state"] == "running"
-    assert snap["stats"] == {"cpu_stats": {}}
-    assert snap["inspect"] == {"Id": "abc"}
+    assert snap["stats"] == {"cpu_stats": {"online_cpus": 1}}
+    assert snap["inspect"]["Id"] == "abc"
 
 
-def test_snapshot_stopped_without_stats(workdir, monkeypatch):
-    container = MagicMock(status="exited", attrs={"Id": "abc"})
+def test_snapshot_running_stats_error_returns_zero_stats(workdir, monkeypatch):
+    container = MagicMock(
+        status="running",
+        attrs={"Id": "abc", "HostConfig": {"Memory": 536870912}},
+    )
+    container.stats.side_effect = docker.errors.APIError("not ready")
+    monkeypatch.setattr(
+        container_mod.client.containers,
+        "get",
+        MagicMock(return_value=container),
+    )
+    monkeypatch.setattr(
+        container_mod.client.api,
+        "get",
+        MagicMock(side_effect=docker.errors.APIError("not ready")),
+    )
+
+    snap = container_mod.get_container_snapshot("user1")
+    assert snap["docker_status"] == "running"
+    assert snap["state"] == "running"
+    assert snap["stats"]["memory_stats"]["usage"] == 0
+    assert snap["stats"]["cpu_stats"]["cpu_usage"]["total_usage"] == 0
+
+
+def test_snapshot_stopped_returns_zero_stats(workdir, monkeypatch):
+    container = MagicMock(status="exited", attrs={"Id": "abc", "HostConfig": {}})
     monkeypatch.setattr(
         container_mod.client.containers,
         "get",
@@ -167,7 +195,7 @@ def test_snapshot_stopped_without_stats(workdir, monkeypatch):
     snap = container_mod.get_container_snapshot("user1")
     assert snap["state"] == "stopped"
     assert snap["docker_status"] == "exited"
-    assert snap["stats"] is None
+    assert snap["stats"]["memory_stats"]["usage"] == 0
     assert snap["inspect"] == {"Id": "abc"}
 
 
