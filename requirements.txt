@@ -39,3 +39,4 @@ Legacy-TL-New==1.8.0
 Telethon-Mod==1.33.1
 qrcode[pil]>=7.4.2
 Pillow>=10.0.0
+aiohttp
