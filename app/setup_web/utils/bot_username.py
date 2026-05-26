@@ -1,12 +1,10 @@
 import re
 import secrets
 import string
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
-from telethon import TelegramClient
-from telethon.errors import UsernameNotOccupiedError
-from telethon.tl.functions.contacts import ResolveUsernameRequest
-
+from app.setup_web.auth.client import auth_client
+from app.setup_web.tl import backend_for_container
 from app.setup_web.userbots import collect_bot_usernames
 
 
@@ -42,19 +40,20 @@ async def _check_local_collision(
             raise ValueError("bot_username_taken")
 
 
-async def _is_username_taken_on_telegram(client: TelegramClient, username: str) -> bool:
+async def _is_username_taken_on_telegram(
+    backend: Any, client: Any, username: str
+) -> bool:
     try:
-        await client(ResolveUsernameRequest(username=username))
+        await client(backend.resolve_username_request_cls(username=username))
         return True
-    except UsernameNotOccupiedError:
+    except backend.errors.UsernameNotOccupiedError:
         return False
 
 
 async def _check_telegram_available(container: str, username: str) -> None:
-    from app.setup_web.auth.session_client import auth_client
-
+    backend = await backend_for_container(container)
     async with auth_client(container) as client:
-        if await _is_username_taken_on_telegram(client, username):
+        if await _is_username_taken_on_telegram(backend, client, username):
             raise ValueError("bot_username_taken")
 
 

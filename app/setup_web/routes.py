@@ -14,6 +14,7 @@ from app.setup_web.security import (
     resolve_container,
 )
 from app.setup_web.userbots import delete_account, list_accounts, userbot_for_container
+from app.setup_web.utils.bot_username import check_bot_username, suggest_bot_username
 
 logger = logging.getLogger("setup_web")
 setup = Blueprint("setup", url_prefix="/setup")
@@ -164,7 +165,7 @@ async def qr_2fa(request: Request):
 async def bot_suggest(request: Request):
     container = resolve_container(request)
     userbot = await userbot_for_container(container)
-    return json({"username": auth.suggest_bot_username(userbot.prefix)})
+    return json({"username": suggest_bot_username(userbot.prefix)})
 
 
 @setup.post("/bot/check")
@@ -175,7 +176,7 @@ async def bot_check(request: Request):
     tg_id = body.get("tg_id")
     if tg_id is not None:
         tg_id = int(tg_id)
-    result = await auth.check_bot_username(
+    result = await check_bot_username(
         container, body.get("username", ""), tg_id=tg_id
     )
     return json(result)
@@ -189,7 +190,7 @@ async def finish(request: Request):
     state = auth.get_state(container)
     if not state or not state.tg_id:
         raise ValueError("Not authenticated")
-    await auth.check_bot_username(container, bot_username, tg_id=state.tg_id)
+    await check_bot_username(container, bot_username, tg_id=state.tg_id)
     tg_id, memory = auth.take_memory_session(container)
     await provision.finish_provision(container, tg_id, memory, bot_username)
     logger.info("provision finish container=%s tg_id=%s", container, tg_id)

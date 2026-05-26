@@ -9,9 +9,8 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 import aiofiles.os
 
-from telethon.sessions import MemorySession, SQLiteSession
-
 from app.setup_web import storage
+from app.setup_web.tl import TLBackend, get_backend
 from app.setup_web.docker_ops import (
     container_is_running,
     restart_container,
@@ -149,12 +148,13 @@ async def save_session_file(
     container_name: str,
     userbot: UserbotInfo,
     tg_id: int,
-    memory: MemorySession,
+    memory: Any,
+    backend: TLBackend,
 ) -> Path:
     data = data_dir(container_name)
     await aiofiles.os.makedirs(data, exist_ok=True)
     session_path = data / f"{userbot.prefix}-{tg_id}"
-    sqlite = SQLiteSession(str(session_path))
+    sqlite = backend.sqlite_session_cls(str(session_path))
     sqlite.set_dc(memory.dc_id, memory.server_address, memory.port)
     sqlite.auth_key = memory.auth_key
     sqlite.save()
@@ -183,15 +183,16 @@ async def merge_user_config(
 async def finish_provision(
     container_name: str,
     tg_id: int,
-    memory_session: MemorySession,
+    memory_session: Any,
     bot_username: str,
 ) -> None:
     async with provision_lock(container_name):
         userbot = await userbot_for_container(container_name)
+        backend = get_backend(userbot.tag)
         cfg = await read_config_json(container_name)
         if not cfg.get("api_id") or not cfg.get("api_hash"):
             await merge_credentials(container_name, DEFAULT_API_ID, DEFAULT_API_HASH)
-        await save_session_file(container_name, userbot, tg_id, memory_session)
+        await save_session_file(container_name, userbot, tg_id, memory_session, backend)
         await merge_user_config(container_name, userbot, tg_id, bot_username)
         try:
             await restart_container(container_name)

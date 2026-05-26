@@ -1,13 +1,7 @@
 from typing import Dict, Literal, Optional
 
-from telethon.errors import (
-    FloodWaitError,
-    PasswordHashInvalidError,
-    PhoneCodeInvalidError,
-    SessionPasswordNeededError,
-)
-
 from app.setup_web.auth.state import AuthState, clear_state
+from app.setup_web.tl import TLBackend
 from app.setup_web.utils.telegram_profile import user_profile
 
 AuthMode = Literal["phone", "qr"]
@@ -45,11 +39,12 @@ async def finalize_login(state: AuthState) -> Dict:
     return user_profile(me)
 
 
-def map_sign_in_error(exc: Exception) -> ValueError:
-    if isinstance(exc, PhoneCodeInvalidError):
+def map_sign_in_error(backend: TLBackend, exc: Exception) -> ValueError:
+    errors = backend.errors
+    if isinstance(exc, errors.PhoneCodeInvalidError):
         return ValueError("Invalid code")
-    if isinstance(exc, PasswordHashInvalidError):
+    if isinstance(exc, errors.PasswordHashInvalidError):
         return ValueError("Invalid 2FA password")
-    if isinstance(exc, FloodWaitError):
+    if isinstance(exc, errors.FloodWaitError):
         return ValueError(f"Flood wait: try again in {exc.seconds}s")
     raise exc

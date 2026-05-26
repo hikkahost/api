@@ -17,9 +17,8 @@ USERBOT_VARIANTS: Dict[str, Dict[str, str]] = {
     "hikka": {"prefix": "hikka", "inline_module": "hikka.inline"},
     "heroku": {"prefix": "heroku", "inline_module": "heroku.inline"},
     "legacy": {"prefix": "legacy", "inline_module": "legacy.inline"},
+    "geektg": {"prefix": "geektg", "inline_module": "geektg.inline"},
 }
-
-GEEKTG_UNSUPPORTED = "geektg"
 
 
 def _strip_prefix(value: str, prefix: str) -> str:
@@ -107,15 +106,14 @@ def image_tag_from_image(image: str) -> str:
 
 def userbot_from_image(image: str) -> UserbotInfo:
     tag = image_tag_from_image(image)
-    if tag == GEEKTG_UNSUPPORTED:
-        raise ValueError("GeekTG / Friendly-Telegram is not supported in setup_web v1")
     if tag not in USERBOT_VARIANTS:
-        if "heroku" in image.lower():
+        lowered = image.lower()
+        if "heroku" in lowered:
             tag = "heroku"
-        elif "legacy" in image.lower():
+        elif "legacy" in lowered:
             tag = "legacy"
-        elif "hikka" in image.lower():
-            tag = "hikka"
+        elif "geektg" in lowered or "friendly" in lowered:
+            tag = "geektg"
         else:
             tag = "hikka"
     spec = USERBOT_VARIANTS[tag]

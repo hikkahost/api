@@ -1,10 +1,7 @@
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Optional
-
-from telethon import TelegramClient
-from telethon.sessions import MemorySession
+from typing import Any, Dict, Optional
 
 AUTH_TTL_SECONDS = 30 * 60
 
@@ -15,10 +12,11 @@ class AuthState:
     mode: str = "phone"
     phone: Optional[str] = None
     phone_code_hash: Optional[str] = None
-    client: Optional[TelegramClient] = None
-    qr_login: Optional[object] = None
-    memory: Optional[MemorySession] = None
+    client: Optional[Any] = None
+    qr_login: Optional[Any] = None
+    memory: Optional[Any] = None
     tg_id: Optional[int] = None
+    backend: Optional[Any] = None
     created_at: float = field(default_factory=time.time)
 
     def expired(self) -> bool:
@@ -28,7 +26,7 @@ class AuthState:
 _states: Dict[str, AuthState] = {}
 
 
-async def disconnect_client(client: TelegramClient) -> None:
+async def disconnect_client(client: Any) -> None:
     try:
         await client.disconnect()
     except Exception:
