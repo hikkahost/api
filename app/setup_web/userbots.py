@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -8,8 +9,8 @@ import aiofiles.os
 
 from app.setup_web import storage
 
-DEFAULT_API_ID = 2040
-DEFAULT_API_HASH = "b18441a1ff607e10a989891a5462e627"
+TGCREDS_FILENAME = "tgcreds.json"
+_TGCREDS_FALLBACK = {"api_id": 123456, "api_hash": ""}
 
 _VALID_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$")
 
@@ -66,6 +67,38 @@ def repo_root() -> Path:
     if (cwd / "volumes").is_dir():
         return cwd
     return Path(__file__).resolve().parents[2]
+
+
+def tgcreds_path() -> Path:
+    return repo_root() / TGCREDS_FILENAME
+
+
+def _load_tgcreds() -> Dict[str, object]:
+    try:
+        raw = tgcreds_path().read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError):
+        return dict(_TGCREDS_FALLBACK)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return dict(_TGCREDS_FALLBACK)
+    if not isinstance(data, dict):
+        return dict(_TGCREDS_FALLBACK)
+    return data
+
+
+def default_api_id() -> int:
+    try:
+        return int(_load_tgcreds().get("api_id") or _TGCREDS_FALLBACK["api_id"])
+    except (TypeError, ValueError):
+        return int(_TGCREDS_FALLBACK["api_id"])
+
+
+def default_api_hash() -> str:
+    value = _load_tgcreds().get("api_hash")
+    if isinstance(value, str) and value:
+        return value
+    return str(_TGCREDS_FALLBACK["api_hash"])
 
 
 def volume_dir(container_name: str) -> Path:

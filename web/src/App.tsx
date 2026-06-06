@@ -31,6 +31,10 @@ export default function App() {
   const [apiId, setApiId] = useState("");
   const [apiHash, setApiHash] = useState("");
   const [credentialsSaving, setCredentialsSaving] = useState(false);
+  const [defaults, setDefaults] = useState<{
+    api_id: number;
+    api_hash: string;
+  } | null>(null);
 
   const [authTab, setAuthTab] = useState<"phone" | "qr">("phone");
   const [phone, setPhone] = useState("");
@@ -74,6 +78,7 @@ export default function App() {
     const data = await setupApi.accounts();
     setAccounts(data.accounts);
     setUserbot(data.userbot);
+    setDefaults(data.defaults);
     if (data.credentials.api_hash_set && data.credentials.api_id) {
       setApiId(String(data.credentials.api_id));
     }
@@ -305,6 +310,7 @@ export default function App() {
             key="credentials"
             apiId={apiId}
             apiHash={apiHash}
+            defaults={defaults}
             onApiIdChange={setApiId}
             onApiHashChange={setApiHash}
             onBack={() => goTo("home")}

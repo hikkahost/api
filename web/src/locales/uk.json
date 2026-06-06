@@ -53,17 +53,17 @@
     "apiHash": "API Hash",
     "apiIdPlaceholder": "Ваш API ID",
     "apiHashPlaceholder": "Ваш API Hash",
-    "useDefaults": "Стандартні (2040)",
+    "useDefaults": "Стандартні ключі",
     "continue": "Продовжити",
     "saving": "Зберігаємо та перезапускаємо…",
     "emptyError": "Введіть API ID та API Hash.",
-    "defaultsWarning": "Це публічні ключі, якими користуються багато хто. Іноді Telegram може обмежувати акаунти з такими ключами, тому рекомендуємо отримати власні ключі на my.telegram.org.",
+    "defaultsWarning": "Це ключі від [@SunnexGB](https://t.me/SunnexGB). Беручи їх, ви підтверджуєте, що вся відповідальність лежить повністю на вас, а не на [@SunnexGB](https://t.me/SunnexGB). Щоб уникнути конфліктів, наполегливо рекомендуємо отримати власні ключі на [my.telegram.org](https://my.telegram.org).",
     "defaultsConfirmTitle": "Використати стандартні ключі?",
     "defaultsContinueTitle": "Продовжити зі стандартними ключами?",
-    "defaultsConfirmBody": "Це публічні ключі, якими користуються багато хто. Іноді Telegram може обмежувати акаунти з такими ключами, тому рекомендуємо отримати власні ключі на my.telegram.org.",
+    "defaultsConfirmBody": "Це ключі від [@SunnexGB](https://t.me/SunnexGB). Беручи їх, ви підтверджуєте, що вся відповідальність лежить повністю на вас, а не на [@SunnexGB](https://t.me/SunnexGB), щоб уникнути конфліктів. Краще створіть власні ключі на [my.telegram.org](https://my.telegram.org).",
     "defaultsCancel": "Скасувати",
-    "defaultsAccept": "Використати",
-    "defaultsAcceptContinue": "Продовжити"
+    "defaultsAccept": "Прийняти і використати",
+    "defaultsAcceptContinue": "Прийняти і продовжити"
   },
   "login": {
     "badge": "Крок 3",

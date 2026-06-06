@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  DEFAULT_API_HASH,
-  DEFAULT_API_ID,
-  isDefaultCredentials,
-} from "../../api";
+import { isDefaultCredentials } from "../../api";
 import { useT } from "../../i18n";
+import { renderRich } from "../../i18n/rich";
 import { HeroCard } from "../HeroCard";
 
 type Props = {
   apiId: string;
   apiHash: string;
+  defaults: { api_id: number; api_hash: string } | null;
   onApiIdChange: (v: string) => void;
   onApiHashChange: (v: string) => void;
   onBack: () => void;
@@ -21,6 +19,7 @@ type Props = {
 export function CredentialsStep({
   apiId,
   apiHash,
+  defaults,
   onApiIdChange,
   onApiHashChange,
   onBack,
@@ -34,11 +33,13 @@ export function CredentialsStep({
   const [defaultsAccepted, setDefaultsAccepted] = useState(false);
   const [localError, setLocalError] = useState("");
 
-  const usingDefaults = isDefaultCredentials(apiId, apiHash);
+  const hasDefaults = !!(defaults && defaults.api_hash);
+  const usingDefaults = isDefaultCredentials(apiId, apiHash, defaults);
 
   const applyDefaults = () => {
-    onApiIdChange(String(DEFAULT_API_ID));
-    onApiHashChange(DEFAULT_API_HASH);
+    if (!defaults) return;
+    onApiIdChange(String(defaults.api_id));
+    onApiHashChange(defaults.api_hash);
     setShowDefaultsConfirm(false);
     setLocalError("");
   };
@@ -93,7 +94,9 @@ export function CredentialsStep({
       </a>
 
       {usingDefaults && !defaultsAccepted && !showDefaultsConfirm && !confirmContinue && (
-        <p className="warning-banner text-sm">{t("credentials.defaultsWarning")}</p>
+        <p className="warning-banner text-sm">
+          {renderRich(t("credentials.defaultsWarning"))}
+        </p>
       )}
 
       {localError && <p className="text-sm" style={{ color: "rgb(var(--error-text))" }}>{localError}</p>}
@@ -129,11 +132,15 @@ export function CredentialsStep({
       {(showDefaultsConfirm || confirmContinue) && (
         <div className="warning-banner space-y-3">
           <p className="text-sm font-medium text-theme">
-            {confirmContinue
-              ? t("credentials.defaultsContinueTitle")
-              : t("credentials.defaultsConfirmTitle")}
+            {renderRich(
+              confirmContinue
+                ? t("credentials.defaultsContinueTitle")
+                : t("credentials.defaultsConfirmTitle")
+            )}
           </p>
-          <p className="text-sm leading-relaxed">{t("credentials.defaultsConfirmBody")}</p>
+          <p className="text-sm leading-relaxed">
+            {renderRich(t("credentials.defaultsConfirmBody"))}
+          </p>
           <div className="confirm-actions">
             <button
               type="button"
@@ -172,13 +179,15 @@ export function CredentialsStep({
           <button type="button" className="btn-ghost flex-1 min-w-0 text-sm" onClick={onBack}>
             {t("common.back")}
           </button>
-          <button
-            type="button"
-            className="btn-ghost flex-1 min-w-0 text-sm"
-            onClick={() => setShowDefaultsConfirm(true)}
-          >
-            {t("credentials.useDefaults")}
-          </button>
+          {hasDefaults && (
+            <button
+              type="button"
+              className="btn-ghost flex-1 min-w-0 text-sm"
+              onClick={() => setShowDefaultsConfirm(true)}
+            >
+              {t("credentials.useDefaults")}
+            </button>
+          )}
         </div>
         <button
           type="button"

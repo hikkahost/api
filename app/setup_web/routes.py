@@ -13,7 +13,13 @@ from app.setup_web.security import (
     rate_limit_middleware,
     resolve_container,
 )
-from app.setup_web.userbots import delete_account, list_accounts, userbot_for_container
+from app.setup_web.userbots import (
+    default_api_hash,
+    default_api_id,
+    delete_account,
+    list_accounts,
+    userbot_for_container,
+)
 from app.setup_web.utils.bot_username import check_bot_username, suggest_bot_username
 
 logger = logging.getLogger("setup_web")
@@ -54,6 +60,10 @@ async def accounts(request: Request):
             "credentials": {
                 "api_id": provision.coerce_api_id(cfg.get("api_id")),
                 "api_hash_set": bool(str(cfg.get("api_hash") or "").strip()),
+            },
+            "defaults": {
+                "api_id": default_api_id(),
+                "api_hash": default_api_hash(),
             },
         }
     )

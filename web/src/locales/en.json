@@ -53,17 +53,17 @@
     "apiHash": "API Hash",
     "apiIdPlaceholder": "Your API ID",
     "apiHashPlaceholder": "Your API Hash",
-    "useDefaults": "Use standard (2040)",
+    "useDefaults": "Standard keys",
     "continue": "Continue",
     "saving": "Saving and restarting…",
     "emptyError": "Enter both API ID and API Hash.",
-    "defaultsWarning": "These are public keys used by many people. Telegram may sometimes restrict accounts with such keys, so we recommend getting your own keys at my.telegram.org.",
+    "defaultsWarning": "These are keys of [@SunnexGB](https://t.me/SunnexGB). By using them you accept that all responsibility lies entirely on you, not on [@SunnexGB](https://t.me/SunnexGB). We strongly recommend getting your own keys at [my.telegram.org](https://my.telegram.org) to avoid any conflicts.",
     "defaultsConfirmTitle": "Use standard keys?",
     "defaultsContinueTitle": "Continue with standard keys?",
-    "defaultsConfirmBody": "These are public keys used by many people. Telegram may sometimes restrict accounts with such keys, so we recommend getting your own keys at my.telegram.org.",
+    "defaultsConfirmBody": "These are keys of [@SunnexGB](https://t.me/SunnexGB). By taking them you confirm that all responsibility lies entirely on you, not on [@SunnexGB](https://t.me/SunnexGB), to avoid any conflicts. We recommend creating your own keys at [my.telegram.org](https://my.telegram.org) instead.",
     "defaultsCancel": "Cancel",
-    "defaultsAccept": "Use standard keys",
-    "defaultsAcceptContinue": "Continue"
+    "defaultsAccept": "Accept and use",
+    "defaultsAcceptContinue": "Accept and continue"
   },
   "login": {
     "badge": "Step 3",

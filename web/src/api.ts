@@ -109,6 +109,7 @@ export type AccountsResponse = {
   accounts: Account[];
   userbot: string;
   credentials: { api_id: number; api_hash_set: boolean };
+  defaults: { api_id: number; api_hash: string };
 };
 
 export const setupApi = {
@@ -180,13 +181,15 @@ export const setupApi = {
     }),
 };
 
-export const DEFAULT_API_ID = 2040;
-export const DEFAULT_API_HASH = "b18441a1ff607e10a989891a5462e627";
-
-export function isDefaultCredentials(apiId: string, apiHash: string): boolean {
+export function isDefaultCredentials(
+  apiId: string,
+  apiHash: string,
+  defaults: { api_id: number; api_hash: string } | null
+): boolean {
+  if (!defaults || !defaults.api_hash) return false;
   const id = Number.parseInt(apiId.trim(), 10);
   return (
-    id === DEFAULT_API_ID &&
-    apiHash.trim().toLowerCase() === DEFAULT_API_HASH.toLowerCase()
+    id === defaults.api_id &&
+    apiHash.trim().toLowerCase() === defaults.api_hash.toLowerCase()
   );
 }

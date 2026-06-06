@@ -18,10 +18,10 @@ from app.setup_web.docker_ops import (
     stop_container,
 )
 from app.setup_web.userbots import (
-    DEFAULT_API_HASH,
-    DEFAULT_API_ID,
     UserbotInfo,
     data_dir,
+    default_api_hash,
+    default_api_id,
     userbot_for_container,
 )
 
@@ -84,18 +84,18 @@ async def read_config_json(container_name: str) -> Dict[str, Any]:
 
 def coerce_api_id(value: Any) -> int:
     if value is None or value == "":
-        return DEFAULT_API_ID
+        return default_api_id()
     try:
         if isinstance(value, float) and not math.isfinite(value):
-            return DEFAULT_API_ID
+            return default_api_id()
         return int(value)
     except (TypeError, ValueError, OverflowError):
-        return DEFAULT_API_ID
+        return default_api_id()
 
 
 def coerce_api_hash(value: Any) -> str:
     if not value:
-        return DEFAULT_API_HASH
+        return default_api_hash()
     return str(value)
 
 
@@ -191,7 +191,9 @@ async def finish_provision(
         backend = get_backend(userbot.tag)
         cfg = await read_config_json(container_name)
         if not cfg.get("api_id") or not cfg.get("api_hash"):
-            await merge_credentials(container_name, DEFAULT_API_ID, DEFAULT_API_HASH)
+            await merge_credentials(
+                container_name, default_api_id(), default_api_hash()
+            )
         await save_session_file(container_name, userbot, tg_id, memory_session, backend)
         await merge_user_config(container_name, userbot, tg_id, bot_username)
         try:
