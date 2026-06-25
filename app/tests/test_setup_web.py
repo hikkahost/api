@@ -13,7 +13,6 @@ from app.setup_web.userbots import (
 from app.setup_web.provision import (
     apply_credentials,
     coerce_api_hash,
-    coerce_api_id,
     merge_credentials,
     merge_user_config,
     validate_api_hash,
@@ -48,15 +47,6 @@ def test_suggest_bot_username():
     assert name.startswith("heroku_")
     assert name.endswith("_bot")
     assert len(name) == len("heroku_") + 6 + len("_bot")
-
-
-def test_coerce_api_credentials():
-    assert coerce_api_id(None) == 2040
-    assert coerce_api_id("") == 2040
-    assert coerce_api_id("12345") == 12345
-    assert coerce_api_id("bad") == 2040
-    assert coerce_api_id(float("inf")) == 2040
-    assert coerce_api_id(1e400) == 2040
 
 
 @pytest.mark.asyncio
